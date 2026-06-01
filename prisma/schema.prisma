@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  routines  Routine[]
+  workouts  Workout[]
+  meals     Meal[]
+  syncQueue SyncQueue[]
+}
+
+model Routine {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  day         String
+  time        String?
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  syncStatus  String    @default("pending")
+  remoteId    String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([userId, day])
+  @@index([remoteId])
+}
+
+model Workout {
+  id          String     @id @default(uuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  date        DateTime   @default(now())
+  completed   Boolean    @default(false)
+  syncStatus  String     @default("pending")
+  remoteId    String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  exercises Exercise[]
+
+  @@index([userId])
+  @@index([userId, date])
+  @@index([remoteId])
+}
+
+model Exercise {
+  id        String   @id @default(uuid())
+  workoutId String
+  workout   Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  name      String
+  sets      Int?
+  reps      Int?
+  weight    Float?
+  duration  Int?
+  completed Boolean  @default(false)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workoutId])
+}
+
+model Meal {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  date        DateTime @default(now())
+  mealType    String
+  calories    Float?
+  protein     Float?
+  carbs       Float?
+  fat         Float?
+  syncStatus  String   @default("pending")
+  remoteId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, date])
+  @@index([remoteId])
+}
+
+model SyncQueue {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  operation String
+  table     String
+  recordId  String
+  data      String
+  retries   Int      @default(0)
+  lastError String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, table])
+}
