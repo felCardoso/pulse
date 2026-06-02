@@ -17,13 +17,21 @@ const jetbrainsMono = localFont({
 })
 
 export const metadata: Metadata = {
-  title: "DailyPulse",
-  description: "Sua rotina, treinos e dieta em um só lugar.",
+  title: "DailyPulse — Academia",
+  description: "Registre seus treinos, exercícios e progresso na academia.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "DailyPulse",
+    startupImage: "/icons/icon-512.png",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+    "application-name": "DailyPulse",
+    "msapplication-TileColor": "#0f0f0f",
+    "msapplication-TileImage": "/icons/icon-144.png",
   },
 }
 
