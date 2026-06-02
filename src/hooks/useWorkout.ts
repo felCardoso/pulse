@@ -12,7 +12,7 @@ import {
   deleteExercise,
   parseSetsLog,
 } from "@/lib/services/workout-service"
-import type { Workout, WorkoutFormData, ExerciseFormData, SetLog } from "@/types"
+import type { Workout, WorkoutFormData, ExerciseFormData, SetLog, Exercise } from "@/types"
 import { v4 as uuid } from "uuid"
 
 export function useWorkouts() {
@@ -160,6 +160,29 @@ export function useDeleteExercise(workoutId: string) {
       )
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["workouts"] }),
+  })
+}
+
+export function useFinalizeWorkout(workoutId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (exercises: Pick<Exercise, "id" | "setsLog" | "completed">[]) => {
+      const res = await fetch(`/api/workouts/${workoutId}/finalize`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ exercises }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error ?? "Failed to finalize workout")
+      }
+      return res.json() as Promise<Workout>
+    },
+    onSuccess: (workout) => {
+      const { workouts, setWorkouts } = useAppStore.getState()
+      setWorkouts(workouts.map((w) => (w.id === workoutId ? workout : w)))
+      qc.invalidateQueries({ queryKey: ["workouts"] })
+    },
   })
 }
 
