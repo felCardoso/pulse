@@ -1,4 +1,4 @@
-import type { Workout, WorkoutFormData, ExerciseFormData, Exercise } from "@/types"
+import type { Workout, WorkoutFormData, ExerciseFormData, Exercise, SetLog } from "@/types"
 
 export async function createWorkout(userId: string, data: WorkoutFormData): Promise<Workout> {
   const res = await fetch("/api/workouts", {
@@ -44,7 +44,7 @@ export async function addExercise(workoutId: string, data: ExerciseFormData): Pr
 export async function updateExercise(
   workoutId: string,
   exerciseId: string,
-  data: Partial<ExerciseFormData & { completed: boolean }>
+  data: Partial<ExerciseFormData & { completed: boolean; setsLog: string }>
 ): Promise<Exercise> {
   const res = await fetch(`/api/workouts/${workoutId}/exercises/${exerciseId}`, {
     method: "PATCH",
@@ -60,4 +60,8 @@ export async function deleteExercise(workoutId: string, exerciseId: string): Pro
     method: "DELETE",
   })
   if (!res.ok) throw new Error("Failed to delete exercise")
+}
+
+export function parseSetsLog(raw: string): SetLog[] {
+  try { return JSON.parse(raw) } catch { return [] }
 }

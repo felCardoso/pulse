@@ -62,6 +62,12 @@ export interface Workout {
   exercises?: Exercise[]
 }
 
+export interface SetLog {
+  weight: number
+  reps: number
+  done: boolean
+}
+
 export interface Exercise {
   id: string
   workoutId: string
@@ -70,6 +76,7 @@ export interface Exercise {
   reps?: number | null
   weight?: number | null
   duration?: number | null
+  setsLog: string
   completed: boolean
   order: number
   createdAt: Date

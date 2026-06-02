@@ -88,6 +88,7 @@ model Exercise {
   reps      Int?
   weight    Float?
   duration  Int?
+  setsLog   String   @default("[]")
   completed Boolean  @default(false)
   order     Int      @default(0)
   createdAt DateTime @default(now())

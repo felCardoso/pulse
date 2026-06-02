@@ -10,8 +10,9 @@ import {
   addExercise,
   updateExercise,
   deleteExercise,
+  parseSetsLog,
 } from "@/lib/services/workout-service"
-import type { Workout, WorkoutFormData, ExerciseFormData } from "@/types"
+import type { Workout, WorkoutFormData, ExerciseFormData, SetLog } from "@/types"
 import { v4 as uuid } from "uuid"
 
 export function useWorkouts() {
@@ -121,7 +122,7 @@ export function useUpdateExercise(workoutId: string) {
       data,
     }: {
       exerciseId: string
-      data: Partial<ExerciseFormData & { completed: boolean }>
+      data: Partial<ExerciseFormData & { completed: boolean; setsLog: string }>
     }) => updateExercise(workoutId, exerciseId, data),
     onMutate: ({ exerciseId, data }) => {
       const { workouts, setWorkouts } = useAppStore.getState()
@@ -158,4 +159,25 @@ export function useDeleteExercise(workoutId: string) {
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["workouts"] }),
   })
+}
+
+/** Returns the setsLog from the most recent OTHER workout that has an exercise with this name */
+export function useExerciseHistory(currentWorkoutId: string, exerciseName: string): {
+  sets: SetLog[]
+  date: Date
+} | null {
+  const { workouts } = useAppStore()
+  const lower = exerciseName.toLowerCase().trim()
+
+  const match = workouts
+    .filter((w) => w.id !== currentWorkoutId)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .flatMap((w) =>
+      (w.exercises ?? [])
+        .filter((e) => e.name.toLowerCase().trim() === lower)
+        .map((e) => ({ sets: parseSetsLog(e.setsLog), date: new Date(w.date) }))
+    )
+    .find((x) => x.sets.length > 0)
+
+  return match ?? null
 }

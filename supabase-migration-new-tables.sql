@@ -1,5 +1,15 @@
--- DailyPulse: add new productivity tables
--- Run this in Supabase SQL Editor → safe to re-run (uses IF NOT EXISTS)
+-- DailyPulse: schema migrations
+-- Run this in Supabase SQL Editor → safe to re-run (uses IF NOT EXISTS / IF NOT EXISTS column check)
+
+-- Add setsLog column to Exercise for per-set weight/reps tracking
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name='Exercise' AND column_name='setsLog'
+  ) THEN
+    ALTER TABLE "Exercise" ADD COLUMN "setsLog" TEXT NOT NULL DEFAULT '[]';
+  END IF;
+END $$;
 
 -- RoutineItem (sub-items within a Routine)
 CREATE TABLE IF NOT EXISTS "RoutineItem" (
