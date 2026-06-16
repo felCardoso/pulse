@@ -1,94 +1,123 @@
-"use client"
+'use client'
 
-import Link from "next/link"
-import { Plus, TrendingUp } from "lucide-react"
-import WorkoutList from "@/components/Workouts/WorkoutList"
-import { useWorkouts } from "@/hooks/useWorkout"
-import { isToday } from "@/utils/date"
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { Plus, Play, Dumbbell, Zap } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import TemplateCard from '@/components/template/TemplateCard'
+import { usePulseStore } from '@/store/pulse-store'
+import { calcTotalVolume } from '@/utils/format'
 
 export default function TreinosPage() {
-  const { data: workouts = [], isLoading } = useWorkouts()
+  const router = useRouter()
+  const templates = usePulseStore((s) => s.templates)
+  const sessions = usePulseStore((s) => s.sessions)
+  const activeSession = usePulseStore((s) => s.activeSession)
+  const startWorkout = usePulseStore((s) => s.startWorkout)
+  const getSessionsThisWeek = usePulseStore((s) => s.getSessionsThisWeek)
 
-  const thisWeekStart = (() => {
-    const d = new Date()
-    const day = d.getDay()
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1)
-    return new Date(new Date().setDate(diff))
-  })()
+  const weekSessions = getSessionsThisWeek()
+  const weekVolume = weekSessions.reduce((acc, s) => acc + calcTotalVolume(s.exercises), 0)
 
-  const weekWorkouts = workouts.filter((w) => new Date(w.date) >= thisWeekStart)
-  const totalExercises = weekWorkouts.reduce((n, w) => n + (w.exercises?.length ?? 0), 0)
-  const totalVolume = weekWorkouts.reduce((sum, w) =>
-    sum + (w.exercises ?? []).reduce((s, ex) =>
-      s + (ex.sets && ex.reps && ex.weight ? ex.sets * ex.reps * ex.weight : 0), 0), 0)
+  const getLastSession = (templateId: string) =>
+    sessions.find((s) => s.templateId === templateId && s.status === 'completed')
 
-  const todayWorkout = workouts.find((w) => isToday(w.date))
+  const handleFreeWorkout = () => {
+    startWorkout(null)
+    router.push('/treinos/livre/sessao')
+  }
 
   return (
-    <div className="py-6 space-y-5">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Treinos</h1>
-        <Link
-          href="/treinos/new"
-          className="flex items-center gap-1.5 bg-violet-500 hover:bg-violet-600 active:scale-95 text-white text-sm font-medium px-4 py-2 rounded-xl transition-all"
-        >
-          <Plus size={16} />
-          Novo
+    <div className="space-y-6">
+      <div className="flex items-center justify-between pt-2">
+        <h1 className="text-2xl font-bold text-foreground">Treinos</h1>
+        <Link href="/treinos/novo">
+          <Button size="sm" className="gap-1.5">
+            <Plus className="h-4 w-4" />
+            Novo
+          </Button>
         </Link>
       </div>
 
-      {/* Weekly stats */}
-      <div className="grid grid-cols-3 gap-2">
-        <WeekStat label="Esta semana" value={weekWorkouts.length} unit="treinos" />
-        <WeekStat label="Exercícios" value={totalExercises} unit="total" />
-        <WeekStat
-          label="Volume"
-          value={totalVolume >= 1000 ? (totalVolume / 1000).toFixed(1) : totalVolume}
-          unit={totalVolume >= 1000 ? "toneladas" : "kg"}
-          accent
-        />
-      </div>
-
-      {/* Today's workout CTA */}
-      {!isLoading && todayWorkout && (
-        <Link href={`/treinos/${todayWorkout.id}`} className="block">
-          <div className="p-4 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center gap-3 active:scale-[0.98] transition-all">
-            <div className="w-10 h-10 rounded-xl bg-violet-500/20 flex items-center justify-center flex-shrink-0">
-              <TrendingUp size={18} className="text-violet-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs text-violet-400/80 font-medium">Treino de hoje</p>
-              <p className="text-sm font-semibold truncate">{todayWorkout.name}</p>
-            </div>
-            <p className="text-xs text-violet-400/60 flex-shrink-0">
-              {todayWorkout.exercises?.filter(e => e.completed).length}/{todayWorkout.exercises?.length ?? 0}
-            </p>
+      {activeSession && (
+        <Link
+          href={
+            activeSession.templateId
+              ? `/treinos/${activeSession.templateId}/sessao`
+              : '/treinos/livre/sessao'
+          }
+          className="flex items-center gap-3 rounded-xl border border-primary/40 bg-primary/10 px-4 py-3.5 transition-colors hover:bg-primary/15"
+        >
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/20">
+            <Play className="h-4 w-4 fill-primary text-primary" />
+          </div>
+          <div className="flex-1">
+            <p className="font-semibold text-primary text-sm">Treino em andamento</p>
+            <p className="text-xs text-primary/70">{activeSession.name} — Toque para retomar</p>
           </div>
         </Link>
       )}
 
-      {/* List */}
-      {isLoading ? (
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 rounded-2xl bg-white/5 animate-pulse" />
-          ))}
+      {weekSessions.length > 0 && (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-xl border border-border bg-card p-3.5">
+            <p className="text-2xl font-bold text-foreground">{weekSessions.length}</p>
+            <p className="text-xs text-muted-foreground">treinos esta semana</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-3.5">
+            <p className="text-2xl font-bold text-foreground">{Math.round(weekVolume)}</p>
+            <p className="text-xs text-muted-foreground">kg de volume total</p>
+          </div>
         </div>
-      ) : (
-        <WorkoutList workouts={workouts} />
       )}
-    </div>
-  )
-}
 
-function WeekStat({ label, value, unit, accent }: {
-  label: string; value: number | string; unit: string; accent?: boolean
-}) {
-  return (
-    <div className="bg-white/4 rounded-xl p-3 border border-white/8">
-      <p className={`text-xl font-bold tabular-nums ${accent ? "text-violet-400" : ""}`}>{value}</p>
-      <p className="text-[10px] text-white/40 mt-0.5">{unit}</p>
-      <p className="text-[10px] text-white/25">{label}</p>
+      <div className="space-y-2.5">
+        {templates.length === 0 ? (
+          <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-border py-14 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+              <Dumbbell className="h-7 w-7 text-primary" />
+            </div>
+            <div>
+              <p className="font-semibold text-foreground">Nenhum treino ainda</p>
+              <p className="text-sm text-muted-foreground">Crie seu primeiro plano de treino</p>
+            </div>
+            <Link href="/treinos/novo">
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                Criar treino
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          templates.map((template) => {
+            const last = getLastSession(template.id)
+            return (
+              <TemplateCard
+                key={template.id}
+                template={template}
+                lastSessionDate={last?.startedAt}
+              />
+            )
+          })
+        )}
+      </div>
+
+      {templates.length > 0 && (
+        <button
+          onClick={handleFreeWorkout}
+          className="flex w-full items-center gap-3 rounded-xl border border-dashed border-border px-4 py-3.5 text-left transition-colors hover:border-primary/40 hover:text-primary"
+        >
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-border">
+            <Zap className="h-4 w-4" />
+          </div>
+          <div>
+            <p className="text-sm font-medium">Treino Livre</p>
+            <p className="text-xs text-muted-foreground">
+              Sem template, adicione exercícios na hora
+            </p>
+          </div>
+        </button>
+      )}
     </div>
   )
 }
