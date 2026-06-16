@@ -270,6 +270,7 @@ export const usePulseStore = create<PulseStore>()(
     }),
     {
       name: 'pulse-store',
+      skipHydration: true,
     }
   )
 )
