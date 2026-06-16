@@ -1,7 +1,7 @@
 {
-  "name": "DailyPulse — Academia",
-  "short_name": "DailyPulse",
-  "description": "Registre seus treinos, exercícios e progresso na academia.",
+  "name": "Pulse",
+  "short_name": "Pulse",
+  "description": "Acompanhe seus treinos na academia.",
   "start_url": "/treinos",
   "scope": "/",
   "display": "standalone",
@@ -26,23 +26,16 @@
   "shortcuts": [
     {
       "name": "Novo Treino",
-      "short_name": "Treino",
-      "description": "Iniciar um novo treino",
-      "url": "/treinos/new",
+      "short_name": "Novo",
+      "description": "Criar um novo treino",
+      "url": "/treinos/novo",
       "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
     },
     {
-      "name": "Meus Treinos",
-      "short_name": "Treinos",
+      "name": "Histórico",
+      "short_name": "Histórico",
       "description": "Ver histórico de treinos",
-      "url": "/treinos",
-      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
-    },
-    {
-      "name": "Registrar Refeição",
-      "short_name": "Dieta",
-      "description": "Adicionar refeição",
-      "url": "/dieta/new",
+      "url": "/historico",
       "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
     }
   ]
