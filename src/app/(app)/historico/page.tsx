@@ -30,7 +30,8 @@ function computeStreak(sessions: { startedAt: string; status: string }[]): numbe
 }
 
 export default function HistoricoPage() {
-  const sessions = usePulseStore((s) => s.sessions.filter((s) => s.status === 'completed'))
+  const allSessions = usePulseStore((s) => s.sessions)
+  const sessions = allSessions.filter((s) => s.status === 'completed')
   const streak = computeStreak(sessions)
 
   // Group sessions by relative date
