@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronDown, ChevronUp, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import SetRow from './SetRow'
@@ -24,6 +24,11 @@ export default function ExerciseTracker({
   onSetDone,
 }: Props) {
   const [expanded, setExpanded] = useState(isCurrentExercise)
+
+  // Auto-expand when this exercise becomes the current one
+  useEffect(() => {
+    if (isCurrentExercise) setExpanded(true)
+  }, [isCurrentExercise])
   const completeSet = usePulseStore((s) => s.completeSet)
   const getLastSessionForExercise = usePulseStore((s) => s.getLastSessionForExercise)
   const haptic = useHaptic()
