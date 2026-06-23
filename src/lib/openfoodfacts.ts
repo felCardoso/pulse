@@ -1,11 +1,5 @@
-// Open Food Facts API v3.6 integration with rate limiting
-// API Limits: 1 request/second max, 100 requests/minute recommended
-// User-Agent required for proper rate limit handling
-
-const API_BASE = 'https://world.openfoodfacts.org/api/v3'
-const USER_AGENT = 'Pulse-Workout-App/1.0 (https://github.com/felCardoso/pulse)'
-const MIN_REQUEST_INTERVAL = 1000 // 1 second between requests
-let lastRequestTime = 0
+// Open Food Facts API v3.6 integration via Next.js API proxy
+// This avoids CORS issues by routing through /api/search-food
 
 interface Product {
   code?: string
@@ -17,47 +11,17 @@ interface Product {
   nutrient_levels?: Record<string, string>
 }
 
-interface SearchResponse {
-  products?: Product[]
-  page?: number
-  page_size?: number
-  count?: number
-}
-
-interface BarcodeResponse {
-  product?: Product
-  status?: number
-  status_verbose?: string
-}
-
-async function rateLimitedFetch(url: string) {
-  const now = Date.now()
-  const timeSinceLastRequest = now - lastRequestTime
-
-  if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
-    await new Promise(resolve =>
-      setTimeout(resolve, MIN_REQUEST_INTERVAL - timeSinceLastRequest)
-    )
-  }
-
-  lastRequestTime = Date.now()
-
-  return fetch(url, {
-    headers: {
-      'User-Agent': USER_AGENT,
-      'Accept': 'application/json',
-    },
-  })
-}
-
 export async function searchProductByBarcode(barcode: string): Promise<Product | null> {
   try {
-    const url = `${API_BASE}/products/${barcode}`
-    const response = await rateLimitedFetch(url)
+    const response = await fetch(`/api/search-food?barcode=${barcode}`)
 
     if (!response.ok) return null
 
-    const data = (await response.json()) as BarcodeResponse
+    const data = (await response.json()) as {
+      product?: Product | null
+      error?: string
+    }
+
     return data.product || null
   } catch (err) {
     console.error('Erro ao buscar por código de barras:', err)
@@ -65,18 +29,19 @@ export async function searchProductByBarcode(barcode: string): Promise<Product |
   }
 }
 
-export async function searchProductByName(query: string, pageSize = 5): Promise<Product[]> {
+export async function searchProductByName(query: string): Promise<Product[]> {
   try {
-    const url = new URL(`${API_BASE}/search`)
-    url.searchParams.set('q', query)
-    url.searchParams.set('page_size', pageSize.toString())
-    url.searchParams.set('fields', 'product_name,nutriments,code')
-
-    const response = await rateLimitedFetch(url.toString())
+    const response = await fetch(
+      `/api/search-food?q=${encodeURIComponent(query)}`
+    )
 
     if (!response.ok) return []
 
-    const data = (await response.json()) as SearchResponse
+    const data = (await response.json()) as {
+      products?: Product[]
+      error?: string
+    }
+
     return data.products || []
   } catch (err) {
     console.error('Erro ao buscar por nome:', err)
@@ -92,7 +57,7 @@ export async function searchProduct(query: string): Promise<Product | null> {
   }
 
   // Fall back to name search
-  const results = await searchProductByName(query, 1)
+  const results = await searchProductByName(query)
   return results.length > 0 ? results[0] : null
 }
 
