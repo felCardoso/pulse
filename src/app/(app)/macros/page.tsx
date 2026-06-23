@@ -14,6 +14,9 @@ export default function MacrosPage() {
   const getDayTotals = usePulseStore((s) => s.getDayTotals)
   const cleanupOldFoods = usePulseStore((s) => s.cleanupOldFoods)
   const macroTargets = usePulseStore((s) => s.macroTargets)
+  // Subscribe to the raw logs so the page re-renders (and totals recompute)
+  // whenever a meal is added or removed.
+  usePulseStore((s) => s.dailyMacroLogs)
   const { kcal, protein, carbs, fat, logs } = getDayTotals()
 
   useEffect(() => {
