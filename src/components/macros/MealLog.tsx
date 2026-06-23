@@ -1,7 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { usePulseStore } from '@/store/pulse-store'
+import ConfirmDialog from '@/components/ui/confirm-dialog'
 import type { DailyMacroLog } from '@/types'
 
 interface Props {
@@ -9,6 +11,8 @@ interface Props {
 }
 
 export default function MealLog({ logs }: Props) {
+  const [deleting, setDeleting] = useState<DailyMacroLog | null>(null)
+
   const deleteLog = (id: string) => {
     usePulseStore.setState((s) => ({
       dailyMacroLogs: s.dailyMacroLogs.filter((l) => l.id !== id),
@@ -45,13 +49,28 @@ export default function MealLog({ logs }: Props) {
             </p>
           </div>
           <button
-            onClick={() => deleteLog(log.id)}
+            onClick={() => setDeleting(log)}
             className="shrink-0 ml-3 p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
           >
             <Trash2 className="h-4 w-4" />
           </button>
         </div>
       ))}
+
+      <ConfirmDialog
+        open={deleting !== null}
+        title="Excluir refeição"
+        description={
+          deleting
+            ? `Remover "${deleting.foodName}" (${deleting.gramsConsumed}g) do histórico de hoje?`
+            : undefined
+        }
+        onConfirm={() => {
+          if (deleting) deleteLog(deleting.id)
+          setDeleting(null)
+        }}
+        onCancel={() => setDeleting(null)}
+      />
     </div>
   )
 }

@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { Trash2, Edit2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { usePulseStore } from '@/store/pulse-store'
+import ContextMenu from '@/components/ui/context-menu'
+import ConfirmDialog from '@/components/ui/confirm-dialog'
 import type { MacroFood } from '@/types'
 
 export default function SavedFoodsManager() {
@@ -12,6 +14,7 @@ export default function SavedFoodsManager() {
   const updateFood = usePulseStore((s) => s.updateFood)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editData, setEditData] = useState<MacroFood | null>(null)
+  const [deleting, setDeleting] = useState<MacroFood | null>(null)
 
   const handleEdit = (id: string) => {
     const food = foods.find((f) => f.id === id)
@@ -39,13 +42,14 @@ export default function SavedFoodsManager() {
 
   return (
     <div className="space-y-2">
-      {foods.map((food) => (
-        <div
-          key={food.id}
-          className="rounded-lg border border-border bg-card p-3.5"
-        >
-          {editingId === food.id && editData ? (
-            <div className="space-y-2">
+      {foods.map((food) => {
+        if (editingId === food.id && editData) {
+          return (
+            <div
+              key={food.id}
+              className="rounded-lg border border-border bg-card p-3.5"
+            >
+              <div className="space-y-2">
               <input
                 type="text"
                 value={editData.name}
@@ -107,40 +111,77 @@ export default function SavedFoodsManager() {
                   Salvar
                 </Button>
               </div>
+              </div>
             </div>
-          ) : (
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">{food.name}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {food.kcalPer100g} kcal · P: {food.proteinPer100g}g · C: {food.carbsPer100g}g · G: {food.fatPer100g}g
-                </p>
-                {food.lastUsedAt && (
+          )
+        }
+
+        return (
+          <ContextMenu
+            key={food.id}
+            items={[
+              {
+                label: 'Editar',
+                icon: <Edit2 className="h-4 w-4" />,
+                onSelect: () => handleEdit(food.id),
+              },
+              {
+                label: 'Excluir',
+                icon: <Trash2 className="h-4 w-4" />,
+                destructive: true,
+                onSelect: () => setDeleting(food),
+              },
+            ]}
+          >
+            <div className="rounded-lg border border-border bg-card p-3.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{food.name}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Usado em: {new Date(food.lastUsedAt).toLocaleDateString('pt-BR')}
+                    {food.kcalPer100g} kcal · P: {food.proteinPer100g}g · C: {food.carbsPer100g}g · G: {food.fatPer100g}g
                   </p>
-                )}
-              </div>
-              <div className="flex gap-1 shrink-0">
-                <button
-                  onClick={() => handleEdit(food.id)}
-                  className="p-1.5 hover:bg-secondary rounded transition-colors"
-                  title="Editar"
-                >
-                  <Edit2 className="h-3.5 w-3.5 text-muted-foreground" />
-                </button>
-                <button
-                  onClick={() => deleteFood(food.id)}
-                  className="p-1.5 hover:bg-destructive/10 rounded transition-colors"
-                  title="Deletar"
-                >
-                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                </button>
+                  {food.lastUsedAt && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Usado em: {new Date(food.lastUsedAt).toLocaleDateString('pt-BR')}
+                    </p>
+                  )}
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <button
+                    onClick={() => handleEdit(food.id)}
+                    className="p-1.5 hover:bg-secondary rounded transition-colors"
+                    title="Editar"
+                  >
+                    <Edit2 className="h-3.5 w-3.5 text-muted-foreground" />
+                  </button>
+                  <button
+                    onClick={() => setDeleting(food)}
+                    className="p-1.5 hover:bg-destructive/10 rounded transition-colors"
+                    title="Deletar"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                  </button>
+                </div>
               </div>
             </div>
-          )}
-        </div>
-      ))}
+          </ContextMenu>
+        )
+      })}
+
+      <ConfirmDialog
+        open={deleting !== null}
+        title="Excluir alimento"
+        description={
+          deleting
+            ? `Tem certeza que deseja excluir "${deleting.name}" dos alimentos salvos?`
+            : undefined
+        }
+        onConfirm={() => {
+          if (deleting) deleteFood(deleting.id)
+          setDeleting(null)
+        }}
+        onCancel={() => setDeleting(null)}
+      />
     </div>
   )
 }
