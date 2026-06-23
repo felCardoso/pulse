@@ -1,11 +1,12 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { Download, Upload, Trash2 } from 'lucide-react'
+import { Download, Upload, Trash2, Edit2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { usePulseStore } from '@/store/pulse-store'
 import { exportBackup, parseBackup } from '@/lib/backup'
+import SavedFoodsManager from '@/components/macros/SavedFoodsManager'
 
 const REST_OPTIONS = [
   { label: '30s', value: 30 },
@@ -187,6 +188,14 @@ export default function ConfiguracoesPage() {
             </button>
           </div>
         </div>
+      </section>
+
+      {/* Alimentos salvos */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Alimentos Salvos
+        </h2>
+        <SavedFoodsManager />
       </section>
 
       {/* Data */}

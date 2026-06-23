@@ -66,3 +66,33 @@ export interface AppSettings {
   hapticEnabled: boolean
   soundEnabled: boolean
 }
+
+export interface MacroFood {
+  id: string
+  name: string
+  kcalPer100g: number
+  proteinPer100g: number
+  carbsPer100g: number
+  fatPer100g: number
+  lastUsedAt?: string
+}
+
+export interface DailyMacroLog {
+  id: string
+  date: string
+  foodId: string
+  foodName: string
+  gramsConsumed: number
+  kcal: number
+  protein: number
+  carbs: number
+  fat: number
+  timestamp: string
+}
+
+export interface MacroTargets {
+  kcal: number
+  protein: number
+  carbs: number
+  fat: number
+}
