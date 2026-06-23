@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { usePulseStore } from '@/store/pulse-store'
+import { useOFFFoodSearch } from '@/hooks/useOFFFoodSearch'
 
 interface Props {
   onFoodAdded: (foodId: string) => void
@@ -17,10 +18,9 @@ export default function ManualFoodForm({ onFoodAdded }: Props) {
   const [carbs, setCarbs] = useState('')
   const [fat, setFat] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [searchError, setSearchError] = useState<string | null>(null)
 
   const addFood = usePulseStore((s) => s.addFood)
+  const { search, loading, error: searchError } = useOFFFoodSearch()
 
   const handleCreate = () => {
     if (!name || !kcal || !protein || !carbs || !fat) return
@@ -43,74 +43,12 @@ export default function ManualFoodForm({ onFoodAdded }: Props) {
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return
-    setLoading(true)
-    setSearchError(null)
 
-    try {
-      // First, try barcode search
-      let response = await fetch(
-        `https://world.openfoodfacts.org/api/v0/product/${searchQuery}.json`
-      )
-      const barcodeData = (await response.json()) as {
-        product?: {
-          product_name?: string
-          nutriments?: Record<string, number>
-        }
-        status?: number
-      }
-
-      // If barcode found, use it
-      if (barcodeData.product && barcodeData.status !== 0) {
-        const product = barcodeData.product
-        const nutrients = product.nutriments || {}
-
-        const food = addFood({
-          name: product.product_name || searchQuery,
-          kcalPer100g: nutrients['energy-kcal_100g'] || nutrients['energy-kcal'] || 0,
-          proteinPer100g: nutrients['proteins_100g'] || nutrients['proteins'] || 0,
-          carbsPer100g: nutrients['carbohydrates_100g'] || nutrients['carbohydrates'] || 0,
-          fatPer100g: nutrients['fat_100g'] || nutrients['fat'] || 0,
-        })
-
-        onFoodAdded(food.id)
-        setSearchQuery('')
-        return
-      }
-
-      // If barcode not found, search by name
-      response = await fetch(
-        `https://world.openfoodfacts.org/api/v3/foods?query=${encodeURIComponent(searchQuery)}&page_size=1`
-      )
-      const nameData = (await response.json()) as {
-        foods?: Array<{
-          product_name?: string
-          nutriments?: Record<string, number>
-        }>
-      }
-
-      if (!nameData.foods || nameData.foods.length === 0) {
-        setSearchError('Produto não encontrado. Tente criar manualmente.')
-        return
-      }
-
-      const product = nameData.foods[0]
-      const nutrients = product.nutriments || {}
-
-      const food = addFood({
-        name: product.product_name || searchQuery,
-        kcalPer100g: nutrients['energy-kcal'] || 0,
-        proteinPer100g: nutrients['proteins'] || 0,
-        carbsPer100g: nutrients['carbohydrates'] || 0,
-        fatPer100g: nutrients['fat'] || 0,
-      })
-
-      onFoodAdded(food.id)
+    const food = await search(searchQuery)
+    if (food) {
+      const addedFood = addFood(food)
+      onFoodAdded(addedFood.id)
       setSearchQuery('')
-    } catch (err) {
-      console.error('Erro ao buscar na Open Food Facts:', err)
-      setSearchError('Erro ao conectar à API. Verifique sua conexão.')
-    } finally {
-      setLoading(false)
     }
   }
 
