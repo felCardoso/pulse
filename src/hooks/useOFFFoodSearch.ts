@@ -35,17 +35,25 @@ export function useOFFFoodSearch() {
         return []
       }
 
-      const foods: MacroFood[] = products.map((p) => {
+      const seen = new Set<string>()
+      const foods: MacroFood[] = []
+      for (const p of products) {
         const n = extractNutrients(p)
-        return {
+        const name = productLabel(p)
+        // Dedupe by normalized name + macros so the same product (often
+        // returned multiple times by OFF) only appears once.
+        const key = `${name.toLowerCase().trim()}|${n.kcalPer100g}|${n.proteinPer100g}|${n.carbsPer100g}|${n.fatPer100g}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        foods.push({
           id: crypto.randomUUID(),
-          name: productLabel(p),
+          name,
           kcalPer100g: n.kcalPer100g,
           proteinPer100g: n.proteinPer100g,
           carbsPer100g: n.carbsPer100g,
           fatPer100g: n.fatPer100g,
-        }
-      })
+        })
+      }
 
       cache.set(cacheKey, { foods, timestamp: Date.now() })
       setResults(foods)
