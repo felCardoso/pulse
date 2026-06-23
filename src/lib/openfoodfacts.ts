@@ -4,7 +4,9 @@
 interface Product {
   code?: string
   product_name?: string
-  brands?: string
+  // OFF returns brands inconsistently: usually a comma-separated string, but
+  // sometimes an array (or missing). Keep it loose and coerce defensively.
+  brands?: unknown
   nutriments?: {
     [key: string]: number
   }
@@ -56,6 +58,17 @@ export function extractNutrients(product: Product) {
 }
 
 export function productLabel(product: Product): string {
-  const name = product.product_name || 'Sem nome'
-  return product.brands ? `${name} (${product.brands.split(',')[0].trim()})` : name
+  const name = (typeof product.product_name === 'string' && product.product_name.trim())
+    ? product.product_name.trim()
+    : 'Sem nome'
+
+  // brands may be a string, an array, or absent — normalize to first brand.
+  let firstBrand = ''
+  if (typeof product.brands === 'string') {
+    firstBrand = product.brands.split(',')[0]?.trim() ?? ''
+  } else if (Array.isArray(product.brands) && product.brands.length > 0) {
+    firstBrand = String(product.brands[0]).trim()
+  }
+
+  return firstBrand ? `${name} (${firstBrand})` : name
 }
