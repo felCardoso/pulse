@@ -14,7 +14,7 @@ export default function SavedFoodsList({ selectedFoodId, onSelectFood }: Props) 
     return (
       <div className="text-center py-8 text-muted-foreground">
         <p className="text-sm">
-          Nenhum alimento salvo. Crie um na aba "Manual" ou acesse as configurações para gerenciar alimentos.
+          Nenhum alimento salvo. Crie um na aba &quot;Manual&quot; ou acesse as configurações para gerenciar alimentos.
         </p>
       </div>
     )
