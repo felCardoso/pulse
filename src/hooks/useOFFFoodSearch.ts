@@ -1,68 +1,68 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { searchProduct, extractNutrients } from '@/lib/openfoodfacts'
+import { searchProducts, extractNutrients, productLabel } from '@/lib/openfoodfacts'
 import type { MacroFood } from '@/types'
 
-interface CacheEntry {
-  food: MacroFood
-  timestamp: number
-}
-
-const CACHE_DURATION = 24 * 60 * 60 * 1000 // 24 hours
-const cache = new Map<string, CacheEntry>()
+const CACHE_DURATION = 6 * 60 * 60 * 1000 // 6 hours
+const cache = new Map<string, { foods: MacroFood[]; timestamp: number }>()
 
 export function useOFFFoodSearch() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [results, setResults] = useState<MacroFood[]>([])
 
-  const search = useCallback(async (query: string): Promise<MacroFood | null> => {
-    if (!query.trim()) return null
+  const search = useCallback(async (query: string): Promise<MacroFood[]> => {
+    const trimmed = query.trim()
+    if (!trimmed) return []
 
-    // Check cache first
-    const cacheKey = query.toLowerCase()
+    const cacheKey = trimmed.toLowerCase()
     const cached = cache.get(cacheKey)
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      return cached.food
+      setResults(cached.foods)
+      return cached.foods
     }
 
     setLoading(true)
     setError(null)
+    setResults([])
 
     try {
-      const product = await searchProduct(query)
+      const products = await searchProducts(trimmed)
 
-      if (!product) {
-        setError('Produto não encontrado. Tente criar manualmente.')
-        return null
+      if (products.length === 0) {
+        setError('Nenhum produto encontrado. Tente criar manualmente.')
+        return []
       }
 
-      const nutrients = extractNutrients(product)
-      const food: MacroFood = {
-        id: crypto.randomUUID(),
-        name: product.product_name || query,
-        kcalPer100g: nutrients.kcalPer100g,
-        proteinPer100g: nutrients.proteinPer100g,
-        carbsPer100g: nutrients.carbsPer100g,
-        fatPer100g: nutrients.fatPer100g,
-      }
+      const foods: MacroFood[] = products.map((p) => {
+        const n = extractNutrients(p)
+        return {
+          id: crypto.randomUUID(),
+          name: productLabel(p),
+          kcalPer100g: n.kcalPer100g,
+          proteinPer100g: n.proteinPer100g,
+          carbsPer100g: n.carbsPer100g,
+          fatPer100g: n.fatPer100g,
+        }
+      })
 
-      // Cache the result
-      cache.set(cacheKey, { food, timestamp: Date.now() })
-
-      return food
+      cache.set(cacheKey, { foods, timestamp: Date.now() })
+      setResults(foods)
+      return foods
     } catch (err) {
       console.error('Erro ao buscar na Open Food Facts:', err)
       setError('Erro ao conectar à API. Verifique sua conexão.')
-      return null
+      return []
     } finally {
       setLoading(false)
     }
   }, [])
 
-  const clearCache = useCallback(() => {
-    cache.clear()
+  const reset = useCallback(() => {
+    setResults([])
+    setError(null)
   }, [])
 
-  return { search, loading, error, clearCache }
+  return { search, loading, error, results, reset }
 }

@@ -1,111 +1,99 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const API_BASES = [
-  'https://world.openfoodfacts.org/api/v3',
-  'https://br.openfoodfacts.org/api/v3', // Brazil mirror
-]
-const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Pulse-App'
+// Open Food Facts API integration (server-side proxy to avoid CORS).
+//
+// Endpoints used (all documented & stable):
+//  - Barcode lookup:  GET /api/v2/product/{barcode}.json  -> { status, product }
+//  - Name search (new): https://search.openfoodfacts.org/search?q=...  -> { hits: [...] }
+//  - Name search (legacy fallback): /cgi/search.pl?search_terms=...&json=1 -> { products: [...] }
+//
+// NOTE: there is NO /api/v3/search endpoint — that was the source of the 503s.
 
-// Cache responses in memory (server-side)
-const responseCache = new Map<string, { data: unknown; timestamp: number }>()
-const CACHE_DURATION = 6 * 60 * 60 * 1000 // 6 hours (reduced from 24h)
-let lastRequestTime = 0
+const USER_AGENT =
+  'Pulse-Workout-App/1.0 (https://github.com/felCardoso/pulse; pcardoso.felipe@gmail.com)'
 
-async function fetchWithRetry(url: string, maxRetries = 3): Promise<unknown> {
-  let lastError: Error | null = null
+const FIELDS = 'product_name,nutriments,code,brands'
 
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      // Respect rate limit: min 500ms between requests
-      const timeSinceLastRequest = Date.now() - lastRequestTime
-      if (timeSinceLastRequest < 500) {
-        await new Promise(resolve =>
-          setTimeout(resolve, 500 - timeSinceLastRequest)
-        )
-      }
-
-      lastRequestTime = Date.now()
-
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10s timeout
-
-      const response = await fetch(url, {
-        headers: {
-          'User-Agent': USER_AGENT,
-          'Accept': 'application/json',
-          'Accept-Language': 'pt-BR,pt;q=0.9',
-        },
-        signal: controller.signal,
-      })
-
-      clearTimeout(timeoutId)
-
-      if (!response.ok) {
-        // 503/429 = rate limit/service unavailable, retry
-        if (response.status === 503 || response.status === 429) {
-          const delay = Math.pow(2, attempt) * 1000 // Exponential backoff
-          await new Promise(resolve => setTimeout(resolve, delay))
-          continue
-        }
-        throw new Error(`API error: ${response.status}`)
-      }
-
-      const data = await response.json()
-      return data
-    } catch (err) {
-      lastError = err instanceof Error ? err : new Error(String(err))
-
-      // Retry on network errors but not on parsing errors
-      if (
-        lastError.message.includes('fetch') ||
-        lastError.message.includes('timeout') ||
-        lastError.message.includes('503') ||
-        lastError.message.includes('429')
-      ) {
-        if (attempt < maxRetries - 1) {
-          const delay = Math.pow(2, attempt) * 1000
-          await new Promise(resolve => setTimeout(resolve, delay))
-          continue
-        }
-      } else {
-        // Non-retryable error
-        throw lastError
-      }
-    }
-  }
-
-  throw lastError || new Error('Max retries exceeded')
+interface Product {
+  code?: string
+  product_name?: string
+  brands?: string
+  nutriments?: Record<string, number>
 }
 
-async function fetchWithCacheAndRetry(url: string) {
-  const cacheKey = url
-  const cached = responseCache.get(cacheKey)
+// In-memory cache (per serverless instance).
+const responseCache = new Map<string, { products: Product[]; timestamp: number }>()
+const CACHE_DURATION = 6 * 60 * 60 * 1000 // 6 hours
 
-  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    return cached.data
+let lastRequestTime = 0
+
+async function rateLimitedFetch(url: string): Promise<Response> {
+  const sinceLast = Date.now() - lastRequestTime
+  if (sinceLast < 400) {
+    await new Promise((r) => setTimeout(r, 400 - sinceLast))
   }
+  lastRequestTime = Date.now()
 
-  // Try each API base if URL fails
-  for (const base of API_BASES) {
-    const apiUrl = url.replace(API_BASES[0], base)
-    try {
-      const data = await fetchWithRetry(apiUrl)
-      responseCache.set(cacheKey, { data, timestamp: Date.now() })
-      return data
-    } catch (err) {
-      console.error(`Failed with ${base}:`, err)
-      // Try next mirror
-      continue
-    }
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 9000)
+  try {
+    return await fetch(url, {
+      headers: {
+        'User-Agent': USER_AGENT,
+        Accept: 'application/json',
+      },
+      signal: controller.signal,
+    })
+  } finally {
+    clearTimeout(timeout)
   }
+}
 
-  throw new Error('All API mirrors failed')
+async function lookupByBarcode(barcode: string): Promise<Product[]> {
+  const url = `https://world.openfoodfacts.org/api/v2/product/${barcode}.json?fields=${FIELDS}`
+  const res = await rateLimitedFetch(url)
+  if (!res.ok) throw new Error(`barcode ${res.status}`)
+  const data = (await res.json()) as { status?: number; product?: Product }
+  return data.status === 1 && data.product ? [data.product] : []
+}
+
+// Modern search service (search.openfoodfacts.org). Returns { hits: [...] }.
+async function searchAlicious(query: string): Promise<Product[]> {
+  const url =
+    `https://search.openfoodfacts.org/search?q=${encodeURIComponent(query)}` +
+    `&page_size=10&fields=${FIELDS}`
+  const res = await rateLimitedFetch(url)
+  if (!res.ok) throw new Error(`alicious ${res.status}`)
+  const data = (await res.json()) as { hits?: Product[] }
+  return data.hits ?? []
+}
+
+// Legacy CGI search — slower but very reliable. Returns { products: [...] }.
+async function searchLegacy(query: string): Promise<Product[]> {
+  const url =
+    `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}` +
+    `&search_simple=1&action=process&json=1&page_size=10&fields=${FIELDS}`
+  const res = await rateLimitedFetch(url)
+  if (!res.ok) throw new Error(`legacy ${res.status}`)
+  const data = (await res.json()) as { products?: Product[] }
+  return data.products ?? []
+}
+
+async function searchByName(query: string): Promise<Product[]> {
+  // Try modern search first, fall back to legacy CGI if it fails.
+  try {
+    const hits = await searchAlicious(query)
+    if (hits.length > 0) return hits
+  } catch (err) {
+    console.error('Search-a-licious failed, falling back:', err)
+  }
+  return searchLegacy(query)
 }
 
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams
-  const query = searchParams.get('q')
-  const barcode = searchParams.get('barcode')
+  const params = request.nextUrl.searchParams
+  const query = params.get('q')?.trim()
+  const barcode = params.get('barcode')?.trim()
 
   if (!query && !barcode) {
     return NextResponse.json(
@@ -114,59 +102,43 @@ export async function GET(request: NextRequest) {
     )
   }
 
+  const cacheKey = barcode ? `bc:${barcode}` : `q:${query!.toLowerCase()}`
+  const cached = responseCache.get(cacheKey)
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return NextResponse.json({ products: cached.products, cached: true })
+  }
+
   try {
+    let products: Product[] = []
+
     if (barcode && /^\d{8,14}$/.test(barcode)) {
-      // Barcode search
-      const url = `${API_BASES[0]}/products/${barcode}`
-      const data = await fetchWithCacheAndRetry(url)
-
-      return NextResponse.json({
-        product: (data as Record<string, unknown>).product || null,
-        source: 'barcode',
-      })
+      products = await lookupByBarcode(barcode)
+    } else if (query) {
+      // A numeric query is likely a barcode.
+      if (/^\d{8,14}$/.test(query)) {
+        products = await lookupByBarcode(query)
+      }
+      if (products.length === 0) {
+        products = await searchByName(query)
+      }
     }
 
-    if (query) {
-      // Name search
-      const url = new URL(`${API_BASES[0]}/search`)
-      url.searchParams.set('q', query)
-      url.searchParams.set('page_size', '5')
-      url.searchParams.set('fields', 'product_name,nutriments,code')
-
-      const data = await fetchWithCacheAndRetry(url.toString())
-
-      return NextResponse.json({
-        products: ((data as Record<string, unknown>).products as unknown[]) || [],
-        count: (data as Record<string, unknown>).count || 0,
-        source: 'name',
-      })
-    }
-
-    return NextResponse.json(
-      { error: 'Invalid parameters' },
-      { status: 400 }
+    // Keep only products that actually have usable nutrition data.
+    products = products.filter(
+      (p) => p.nutriments && Object.keys(p.nutriments).length > 0
     )
+
+    responseCache.set(cacheKey, { products, timestamp: Date.now() })
+
+    return NextResponse.json({ products })
   } catch (error) {
     console.error('Food search API error:', error)
-
     return NextResponse.json(
       {
         error: 'Failed to fetch from Open Food Facts API',
         message: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 503 }
+      { status: 502 }
     )
   }
-}
-
-// Clear cache endpoint (optional, for maintenance)
-export async function POST(request: NextRequest) {
-  const { action } = (await request.json()) as { action?: string }
-
-  if (action === 'clear-cache') {
-    responseCache.clear()
-    return NextResponse.json({ message: 'Cache cleared' })
-  }
-
-  return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
 }

@@ -20,7 +20,7 @@ export default function ManualFoodForm({ onFoodAdded }: Props) {
   const [searchQuery, setSearchQuery] = useState('')
 
   const addFood = usePulseStore((s) => s.addFood)
-  const { search, loading, error: searchError } = useOFFFoodSearch()
+  const { search, loading, error: searchError, results, reset } = useOFFFoodSearch()
 
   const handleCreate = () => {
     if (!name || !kcal || !protein || !carbs || !fat) return
@@ -43,13 +43,20 @@ export default function ManualFoodForm({ onFoodAdded }: Props) {
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return
+    await search(searchQuery)
+  }
 
-    const food = await search(searchQuery)
-    if (food) {
-      const addedFood = addFood(food)
-      onFoodAdded(addedFood.id)
-      setSearchQuery('')
-    }
+  const handlePickResult = (result: (typeof results)[number]) => {
+    const addedFood = addFood({
+      name: result.name,
+      kcalPer100g: result.kcalPer100g,
+      proteinPer100g: result.proteinPer100g,
+      carbsPer100g: result.carbsPer100g,
+      fatPer100g: result.fatPer100g,
+    })
+    onFoodAdded(addedFood.id)
+    setSearchQuery('')
+    reset()
   }
 
   return (
@@ -178,6 +185,27 @@ export default function ManualFoodForm({ onFoodAdded }: Props) {
           </div>
           {loading && <p className="text-xs text-muted-foreground">Buscando...</p>}
           {searchError && <p className="text-xs text-destructive">{searchError}</p>}
+
+          {results.length > 0 && (
+            <div className="space-y-2 pt-1">
+              <p className="text-xs text-muted-foreground">
+                {results.length} resultado{results.length !== 1 ? 's' : ''} — toque para adicionar
+              </p>
+              {results.map((result) => (
+                <button
+                  key={result.id}
+                  onClick={() => handlePickResult(result)}
+                  className="w-full text-left p-3 rounded-lg border border-border bg-card hover:border-primary/50 transition-colors"
+                >
+                  <p className="text-sm font-medium text-foreground">{result.name}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {result.kcalPer100g} kcal &middot; P: {result.proteinPer100g}g &middot; C: {result.carbsPer100g}g &middot; G: {result.fatPer100g}g
+                    <span className="text-muted-foreground/60"> (por 100g)</span>
+                  </p>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
