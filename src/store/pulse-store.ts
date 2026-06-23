@@ -356,7 +356,6 @@ export const usePulseStore = create<PulseStore>()(
       },
 
       cleanupOldFoods: () => {
-        const state = get()
         const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
         set((s) => ({

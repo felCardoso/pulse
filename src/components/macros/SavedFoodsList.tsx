@@ -34,7 +34,7 @@ export default function SavedFoodsList({ selectedFoodId, onSelectFood }: Props) 
         >
           <p className="text-sm font-medium text-foreground">{food.name}</p>
           <p className="text-xs text-muted-foreground mt-1">
-            {food.kcalPer100g} kcal · P: {food.proteinPer100g}g · C: {food.carbsPer100g}g · G: {food.fatPer100g}g
+            {food.kcalPer100g} kcal &middot; P: {food.proteinPer100g}g &middot; C: {food.carbsPer100g}g &middot; G: {food.fatPer100g}g
           </p>
         </button>
       ))}

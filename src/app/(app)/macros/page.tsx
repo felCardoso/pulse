@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { usePulseStore } from '@/store/pulse-store'
 import AddMealSheet from '@/components/macros/AddMealSheet'
@@ -11,13 +11,14 @@ import MealLog from '@/components/macros/MealLog'
 
 export default function MacrosPage() {
   const [showAddMeal, setShowAddMeal] = useState(false)
-  const { getDayTotals, cleanupOldFoods } = usePulseStore()
-  const { kcal, protein, carbs, fat, logs } = getDayTotals()
+  const getDayTotals = usePulseStore((s) => s.getDayTotals)
+  const cleanupOldFoods = usePulseStore((s) => s.cleanupOldFoods)
   const macroTargets = usePulseStore((s) => s.macroTargets)
+  const { kcal, protein, carbs, fat, logs } = getDayTotals()
 
   useEffect(() => {
     cleanupOldFoods()
-  }, [])
+  }, [cleanupOldFoods])
 
   return (
     <div className="space-y-6">

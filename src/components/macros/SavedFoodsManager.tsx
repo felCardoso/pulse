@@ -1,16 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { Trash2, Edit2, X } from 'lucide-react'
+import { Trash2, Edit2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { usePulseStore } from '@/store/pulse-store'
+import type { MacroFood } from '@/types'
 
 export default function SavedFoodsManager() {
   const foods = usePulseStore((s) => s.foods)
   const deleteFood = usePulseStore((s) => s.deleteFood)
   const updateFood = usePulseStore((s) => s.updateFood)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editData, setEditData] = useState<any>({})
+  const [editData, setEditData] = useState<MacroFood | null>(null)
 
   const handleEdit = (id: string) => {
     const food = foods.find((f) => f.id === id)
@@ -21,9 +22,10 @@ export default function SavedFoodsManager() {
   }
 
   const handleSaveEdit = () => {
-    if (editingId) {
+    if (editingId && editData) {
       updateFood(editingId, editData)
       setEditingId(null)
+      setEditData(null)
     }
   }
 
@@ -42,7 +44,7 @@ export default function SavedFoodsManager() {
           key={food.id}
           className="rounded-lg border border-border bg-card p-3.5"
         >
-          {editingId === food.id ? (
+          {editingId === food.id && editData ? (
             <div className="space-y-2">
               <input
                 type="text"
@@ -89,7 +91,10 @@ export default function SavedFoodsManager() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => setEditingId(null)}
+                  onClick={() => {
+                    setEditingId(null)
+                    setEditData(null)
+                  }}
                   className="flex-1 h-7 text-xs"
                 >
                   Cancelar

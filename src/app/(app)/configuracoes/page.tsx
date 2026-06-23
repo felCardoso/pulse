@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { Download, Upload, Trash2, Edit2 } from 'lucide-react'
+import { Download, Upload, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { usePulseStore } from '@/store/pulse-store'

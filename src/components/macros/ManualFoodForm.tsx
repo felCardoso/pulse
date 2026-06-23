@@ -17,7 +17,6 @@ export default function ManualFoodForm({ onFoodAdded }: Props) {
   const [carbs, setCarbs] = useState('')
   const [fat, setFat] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
 
   const addFood = usePulseStore((s) => s.addFood)
@@ -49,14 +48,14 @@ export default function ManualFoodForm({ onFoodAdded }: Props) {
       const response = await fetch(
         `https://world.openfoodfacts.org/api/v0/product/${searchQuery}.json`
       )
-      const data = await response.json()
+      const data = (await response.json()) as Record<string, any>
 
       if (data.product) {
-        const product = data.product
-        const nutrients = product.nutriments || {}
+        const product = data.product as Record<string, any>
+        const nutrients = (product.nutriments || {}) as Record<string, number>
 
         const food = addFood({
-          name: product.product_name || searchQuery,
+          name: (product.product_name as string) || searchQuery,
           kcalPer100g: nutrients['energy-kcal_100g'] || nutrients['energy_kcal_100g'] || 0,
           proteinPer100g: nutrients['proteins_100g'] || 0,
           carbsPer100g: nutrients['carbohydrates_100g'] || 0,

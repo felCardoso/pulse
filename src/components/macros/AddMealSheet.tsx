@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import { Search, Plus, X } from 'lucide-react'
+import { useState } from 'react'
+import { Plus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { usePulseStore } from '@/store/pulse-store'
 import SavedFoodsList from './SavedFoodsList'
@@ -11,13 +11,12 @@ interface Props {
   onClose: () => void
 }
 
-type Tab = 'saved' | 'manual' | 'search'
+type Tab = 'saved' | 'manual'
 
 export default function AddMealSheet({ onClose }: Props) {
   const [tab, setTab] = useState<Tab>('saved')
   const [grams, setGrams] = useState<string>('100')
   const [selectedFoodId, setSelectedFoodId] = useState<string | null>(null)
-  const foods = usePulseStore((s) => s.foods)
   const logMeal = usePulseStore((s) => s.logMeal)
 
   const handleAddMeal = () => {
