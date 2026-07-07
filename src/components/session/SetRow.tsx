@@ -1,10 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { Check } from 'lucide-react'
+import { Check, Minus, Plus } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import type { SetLog } from '@/types'
+
+const WEIGHT_STEP = 2.5
 
 interface Props {
   set: SetLog
@@ -25,13 +27,28 @@ export default function SetRow({
   const [reps, setReps] = useState(set.reps != null ? String(set.reps) : '')
   const [shake, setShake] = useState(false)
 
+  // One-tap logging: an empty field falls back to the placeholder value
+  // (previous set in this session, or last session), so a stable workout
+  // is a single ✓ per set with zero typing.
+  const effectiveWeight = weight ? parseFloat(weight) : previousWeight
+  const effectiveReps = reps ? parseInt(reps) : previousReps
+
   const handleDone = () => {
-    if (!reps) {
+    if (effectiveReps == null || isNaN(effectiveReps)) {
       setShake(true)
       setTimeout(() => setShake(false), 600)
       return
     }
-    onComplete(weight ? parseFloat(weight) : undefined, parseInt(reps))
+    onComplete(
+      effectiveWeight != null && !isNaN(effectiveWeight) ? effectiveWeight : undefined,
+      effectiveReps
+    )
+  }
+
+  const stepWeight = (delta: number) => {
+    const base = weight ? parseFloat(weight) : previousWeight ?? 0
+    const next = Math.max(0, Math.round((base + delta) * 100) / 100)
+    setWeight(String(next))
   }
 
   if (set.done) {
@@ -49,10 +66,19 @@ export default function SetRow({
   }
 
   return (
-    <div className={cn('flex items-center gap-2', shake && 'animate-shake')}>
+    <div className={cn('flex items-center gap-1.5', shake && 'animate-shake')}>
       <span className="w-5 shrink-0 text-center text-xs font-semibold text-muted-foreground">
         {set.setNumber}
       </span>
+
+      <button
+        onClick={() => stepWeight(-WEIGHT_STEP)}
+        className="flex h-9 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground transition-colors hover:text-foreground active:scale-95"
+        aria-label={`Diminuir ${WEIGHT_STEP}${weightUnit}`}
+        tabIndex={-1}
+      >
+        <Minus className="h-3.5 w-3.5" />
+      </button>
 
       <Input
         type="number"
@@ -60,8 +86,17 @@ export default function SetRow({
         placeholder={previousWeight != null ? String(previousWeight) : weightUnit}
         value={weight}
         onChange={(e) => setWeight(e.target.value)}
-        className="h-9 flex-1 text-center"
+        className="h-9 flex-1 min-w-0 text-center"
       />
+
+      <button
+        onClick={() => stepWeight(WEIGHT_STEP)}
+        className="flex h-9 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground transition-colors hover:text-foreground active:scale-95"
+        aria-label={`Aumentar ${WEIGHT_STEP}${weightUnit}`}
+        tabIndex={-1}
+      >
+        <Plus className="h-3.5 w-3.5" />
+      </button>
 
       <span className="text-muted-foreground">×</span>
 
@@ -71,7 +106,7 @@ export default function SetRow({
         placeholder={previousReps != null ? String(previousReps) : 'reps'}
         value={reps}
         onChange={(e) => setReps(e.target.value)}
-        className="h-9 w-20 text-center"
+        className="h-9 w-14 shrink-0 text-center"
       />
 
       <button

@@ -9,6 +9,7 @@ import ExerciseTracker from '@/components/session/ExerciseTracker'
 import RestTimer from '@/components/session/RestTimer'
 import AddExerciseSheet from '@/components/session/AddExerciseSheet'
 import { useActiveWorkout } from '@/hooks/useActiveWorkout'
+import { useWakeLock } from '@/hooks/useWakeLock'
 import { usePulseStore } from '@/store/pulse-store'
 import type { SessionExercise } from '@/types'
 
@@ -26,6 +27,9 @@ export default function LivreSessaoPage() {
     addExerciseToActiveSession,
   } = useActiveWorkout()
   const weightUnit = usePulseStore((s) => s.settings.weightUnit)
+
+  // Keep the screen awake for the whole workout.
+  useWakeLock(!!activeSession)
 
   const [restActive, setRestActive] = useState(false)
   const [restSeconds, setRestSeconds] = useState(90)
@@ -65,6 +69,14 @@ export default function LivreSessaoPage() {
     setShowAddExercise(false)
   }
 
+  // "Supino reto · série 3/4" — shown in the rest-timer pill.
+  const nextSet = currentExercise?.sets.find((s) => !s.done)
+  const nextLabel = currentExercise
+    ? nextSet
+      ? `${currentExercise.name} · série ${nextSet.setNumber}/${currentExercise.sets.length}`
+      : currentExercise.name
+    : undefined
+
   return (
     <>
       <div className="fixed inset-0 z-20 bg-background" />
@@ -75,7 +87,7 @@ export default function LivreSessaoPage() {
           progress={{ done: doneCount, total: totalCount }}
           onCancel={handleCancel}
         />
-        <div className="flex-1 overflow-y-auto px-4 py-4 max-w-lg mx-auto w-full space-y-3">
+        <div className="flex-1 overflow-y-auto px-4 py-4 pb-28 max-w-lg mx-auto w-full space-y-3">
           {exercises.map((exercise) => (
             <ExerciseTracker
               key={exercise.id}
@@ -100,7 +112,13 @@ export default function LivreSessaoPage() {
           )}
         </div>
       </div>
-      <RestTimer seconds={restSeconds} isActive={restActive} onEnd={() => setRestActive(false)} onSkip={() => setRestActive(false)} />
+      <RestTimer
+        seconds={restSeconds}
+        isActive={restActive}
+        onEnd={() => setRestActive(false)}
+        onSkip={() => setRestActive(false)}
+        nextLabel={nextLabel}
+      />
       {showAddExercise && (
         <AddExerciseSheet onAdd={handleAddExercise} onClose={() => setShowAddExercise(false)} />
       )}

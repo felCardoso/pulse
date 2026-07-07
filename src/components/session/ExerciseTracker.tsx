@@ -35,7 +35,14 @@ export default function ExerciseTracker({
   const sound = useSound()
 
   const prev = getLastSessionForExercise(exercise.name)
-  const doneCount = exercise.sets.filter((s) => s.done).length
+  const doneSets = exercise.sets.filter((s) => s.done)
+  const doneCount = doneSets.length
+
+  // The last set completed in THIS session takes precedence over last
+  // session's values — completing set 1 pre-fills sets 2 and 3.
+  const lastDone = doneSets[doneSets.length - 1]
+  const hintWeight = lastDone?.weight ?? prev?.weight
+  const hintReps = lastDone?.reps ?? prev?.reps
 
   const handleSetComplete = (setId: string, weight: number | undefined, reps: number | undefined) => {
     unlockAudio()
@@ -106,8 +113,8 @@ export default function ExerciseTracker({
               key={set.id}
               set={set}
               weightUnit={weightUnit}
-              previousWeight={prev?.weight}
-              previousReps={prev?.reps}
+              previousWeight={hintWeight}
+              previousReps={hintReps}
               onComplete={(w, r) => handleSetComplete(set.id, w, r)}
             />
           ))}

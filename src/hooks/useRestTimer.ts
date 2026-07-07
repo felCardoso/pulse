@@ -8,6 +8,7 @@ interface RestTimerReturn {
   totalSeconds: number
   start: (seconds: number) => void
   skip: () => void
+  addTime: (deltaSeconds: number) => void
 }
 
 export function useRestTimer(onEnd?: () => void): RestTimerReturn {
@@ -51,6 +52,14 @@ export function useRestTimer(onEnd?: () => void): RestTimerReturn {
     endTimeRef.current = null
   }, [])
 
+  const addTime = useCallback((deltaSeconds: number) => {
+    if (!endTimeRef.current) return
+    endTimeRef.current += deltaSeconds * 1000
+    setTotalSeconds((t) => Math.max(1, t + deltaSeconds))
+    // Reflect the change immediately instead of waiting for the next frame.
+    setTimeLeft(Math.max(0, Math.ceil((endTimeRef.current - Date.now()) / 1000)))
+  }, [])
+
   // Resume ticking when tab becomes visible again
   useEffect(() => {
     const onVisible = () => {
@@ -69,5 +78,5 @@ export function useRestTimer(onEnd?: () => void): RestTimerReturn {
     }
   }, [])
 
-  return { isActive, timeLeft, totalSeconds, start, skip }
+  return { isActive, timeLeft, totalSeconds, start, skip, addTime }
 }

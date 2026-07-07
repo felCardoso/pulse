@@ -27,6 +27,23 @@ export default function TreinosPage() {
     router.push('/treinos/livre/sessao')
   }
 
+  // Suggest the next workout in the cycle: the template after the one
+  // used in the most recent completed session (wrapping around).
+  const suggestedTemplate = (() => {
+    if (templates.length === 0) return null
+    const lastTemplated = sessions.find((s) => s.status === 'completed' && s.templateId)
+    if (!lastTemplated) return templates[0]
+    const idx = templates.findIndex((t) => t.id === lastTemplated.templateId)
+    if (idx === -1) return templates[0]
+    return templates[(idx + 1) % templates.length]
+  })()
+
+  const handleStartSuggested = () => {
+    if (!suggestedTemplate) return
+    startWorkout(suggestedTemplate)
+    router.push(`/treinos/${suggestedTemplate.id}/sessao`)
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between pt-2">
@@ -56,6 +73,24 @@ export default function TreinosPage() {
             <p className="text-xs text-primary/70">{activeSession.name} — Toque para retomar</p>
           </div>
         </Link>
+      )}
+
+      {/* Next workout suggestion — start with one tap */}
+      {!activeSession && suggestedTemplate && (
+        <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3.5">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15">
+            <Play className="h-4 w-4 fill-primary text-primary" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs text-muted-foreground">Próximo treino sugerido</p>
+            <p className="truncate text-sm font-semibold text-foreground">
+              {suggestedTemplate.name}
+            </p>
+          </div>
+          <Button size="sm" onClick={handleStartSuggested} className="shrink-0">
+            Iniciar
+          </Button>
+        </div>
       )}
 
       {weekSessions.length > 0 && (

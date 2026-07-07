@@ -7,6 +7,7 @@ import { usePulseStore } from '@/store/pulse-store'
 import AddMealSheet from '@/components/macros/AddMealSheet'
 import MacroProgressBar from '@/components/macros/MacroProgressBar'
 import DayMacroSummary from '@/components/macros/DayMacroSummary'
+import QuickAddFoods from '@/components/macros/QuickAddFoods'
 import MealLog from '@/components/macros/MealLog'
 
 export default function MacrosPage() {
@@ -45,6 +46,9 @@ export default function MacrosPage() {
         carbs={{ current: carbs, target: macroTargets.carbs }}
         fat={{ current: fat, target: macroTargets.fat }}
       />
+
+      {/* One-tap quick add (most used foods + repeat last meal) */}
+      <QuickAddFoods />
 
       {/* Add meal button */}
       <Button
