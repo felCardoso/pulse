@@ -15,6 +15,7 @@ export default function MeasurementList() {
   const bodyMeasurements = usePulseStore((s) => s.bodyMeasurements)
   const deleteBodyMeasurement = usePulseStore((s) => s.deleteBodyMeasurement)
   const bioimpedance = usePulseStore((s) => !!s.settings.bioimpedance)
+  const weightUnit = usePulseStore((s) => s.settings.weightUnit)
   const [deleting, setDeleting] = useState<BodyMeasurement | null>(null)
 
   if (bodyMeasurements.length === 0) return null
@@ -43,7 +44,7 @@ export default function MeasurementList() {
             <div className="flex-1 min-w-0">
               <div className="flex items-baseline gap-2">
                 <p className="text-sm font-semibold text-foreground tabular-nums">
-                  {m.weightKg} kg
+                  {m.weightKg} {weightUnit}
                 </p>
                 {delta !== null && delta !== 0 && (
                   <span className="flex items-center gap-0.5 text-xs text-muted-foreground tabular-nums">
@@ -53,7 +54,7 @@ export default function MeasurementList() {
                       <TrendingDown className="h-3 w-3" />
                     )}
                     {delta > 0 ? '+' : ''}
-                    {delta} kg
+                    {delta} {weightUnit}
                   </span>
                 )}
                 {delta === 0 && (
@@ -83,7 +84,7 @@ export default function MeasurementList() {
         title="Excluir registro"
         description={
           deleting
-            ? `Remover a medição de ${formatDateBR(deleting.date)} (${deleting.weightKg} kg)?`
+            ? `Remover a medição de ${formatDateBR(deleting.date)} (${deleting.weightKg} ${weightUnit})?`
             : undefined
         }
         onConfirm={() => {

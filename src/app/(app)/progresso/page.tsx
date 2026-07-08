@@ -18,6 +18,7 @@ const BIO_CARDS = [
 export default function ProgressoPage() {
   const bodyMeasurements = usePulseStore((s) => s.bodyMeasurements)
   const bioimpedance = usePulseStore((s) => !!s.settings.bioimpedance)
+  const weightUnit = usePulseStore((s) => s.settings.weightUnit)
   const [showSheet, setShowSheet] = useState(false)
 
   const latest = bodyMeasurements[bodyMeasurements.length - 1]
@@ -42,7 +43,7 @@ export default function ProgressoPage() {
     value: m.weightKg,
   }))
 
-  const fmtDelta = (d: number) => `${d > 0 ? '+' : ''}${d} kg`
+  const fmtDelta = (d: number) => `${d > 0 ? '+' : ''}${d} ${weightUnit}`
 
   return (
     <div className="space-y-6">
@@ -100,7 +101,7 @@ export default function ProgressoPage() {
           <div className="flex items-end justify-between gap-2">
             <p className="text-3xl font-bold text-foreground tabular-nums">
               {latest.weightKg}
-              <span className="text-base text-muted-foreground font-normal ml-1">kg</span>
+              <span className="text-base text-muted-foreground font-normal ml-1">{weightUnit}</span>
             </p>
             <div className="text-right text-xs text-muted-foreground tabular-nums">
               {weightDelta !== null && (
@@ -121,7 +122,7 @@ export default function ProgressoPage() {
       )}
 
       {/* Weight chart */}
-      {chartPoints.length > 1 && <WeightChart points={chartPoints} />}
+      {chartPoints.length > 1 && <WeightChart points={chartPoints} unit={weightUnit} />}
 
       {/* Bioimpedance cards */}
       {bioimpedance && latest && (

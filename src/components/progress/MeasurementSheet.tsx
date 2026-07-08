@@ -25,6 +25,7 @@ const BIO_FIELDS: BioField[] = [
 export default function MeasurementSheet({ onClose }: Props) {
   const addBodyMeasurement = usePulseStore((s) => s.addBodyMeasurement)
   const bioimpedance = usePulseStore((s) => !!s.settings.bioimpedance)
+  const weightUnit = usePulseStore((s) => s.settings.weightUnit)
   const lastMeasurement = usePulseStore((s) => s.bodyMeasurements[s.bodyMeasurements.length - 1])
 
   const [weight, setWeight] = useState('')
@@ -73,7 +74,7 @@ export default function MeasurementSheet({ onClose }: Props) {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Peso (kg)</label>
+          <label className="text-sm font-medium text-foreground">Peso ({weightUnit})</label>
           <input
             type="number"
             inputMode="decimal"
