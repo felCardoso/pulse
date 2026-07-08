@@ -56,7 +56,7 @@ export default function LivreSessaoPage() {
 
   const handleFinish = () => {
     const session = finishWorkout()
-    if (session) router.push(`/historico/${session.id}`)
+    if (session) router.push(`/treinos/historico/${session.id}`)
   }
 
   const handleCancel = () => {

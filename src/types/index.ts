@@ -65,6 +65,8 @@ export interface AppSettings {
   defaultRestSeconds: number
   hapticEnabled: boolean
   soundEnabled: boolean
+  /** Shows extra body-composition fields on the Progresso page */
+  bioimpedance: boolean
 }
 
 export interface MacroFood {
@@ -95,4 +97,16 @@ export interface MacroTargets {
   protein: number
   carbs: number
   fat: number
+}
+
+export interface BodyMeasurement {
+  id: string
+  /** YYYY-MM-DD */
+  date: string
+  weightKg: number
+  // Bioimpedance extras (only filled when the setting is enabled)
+  bodyFatPct?: number
+  musclePct?: number
+  waterPct?: number
+  visceralFat?: number
 }

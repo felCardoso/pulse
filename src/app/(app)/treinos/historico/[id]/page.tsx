@@ -25,7 +25,7 @@ export default function SessaoDetailPage() {
     return (
       <div className="py-10 text-center text-muted-foreground">
         <p>Sessão não encontrada.</p>
-        <Link href="/historico" className="mt-4 inline-block text-primary text-sm">
+        <Link href="/treinos/historico" className="mt-4 inline-block text-primary text-sm">
           Voltar
         </Link>
       </div>
@@ -62,7 +62,7 @@ export default function SessaoDetailPage() {
   return (
     <div className="space-y-6 pb-8">
       <div className="flex items-center gap-3 pt-2">
-        <Link href="/historico" className="text-muted-foreground hover:text-foreground">
+        <Link href="/treinos/historico" className="text-muted-foreground hover:text-foreground">
           <ChevronLeft className="h-5 w-5" />
         </Link>
         <div className="flex-1 min-w-0">

@@ -1,4 +1,13 @@
-import type { WorkoutTemplate, WorkoutSession, PersonalRecord, AppSettings } from '@/types'
+import type {
+  WorkoutTemplate,
+  WorkoutSession,
+  PersonalRecord,
+  AppSettings,
+  MacroFood,
+  DailyMacroLog,
+  MacroTargets,
+  BodyMeasurement,
+} from '@/types'
 
 interface BackupData {
   version: number
@@ -7,11 +16,18 @@ interface BackupData {
   sessions: WorkoutSession[]
   personalRecords: Record<string, PersonalRecord>
   settings: AppSettings
+  // v2 fields (optional so v1 backups still import)
+  foods?: MacroFood[]
+  dailyMacroLogs?: DailyMacroLog[]
+  macroTargets?: MacroTargets
+  bodyMeasurements?: BodyMeasurement[]
 }
 
-export function exportBackup(data: Omit<BackupData, 'version' | 'exportedAt'>) {
+export type BackupPayload = Omit<BackupData, 'version' | 'exportedAt'>
+
+export function exportBackup(data: BackupPayload) {
   const backup: BackupData = {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     ...data,
   }
@@ -26,7 +42,7 @@ export function exportBackup(data: Omit<BackupData, 'version' | 'exportedAt'>) {
   URL.revokeObjectURL(url)
 }
 
-export function parseBackup(json: string): Omit<BackupData, 'version' | 'exportedAt'> {
+export function parseBackup(json: string): BackupPayload {
   const data = JSON.parse(json) as BackupData
   if (!data.version || !Array.isArray(data.templates)) {
     throw new Error('Arquivo de backup inválido')
@@ -36,5 +52,9 @@ export function parseBackup(json: string): Omit<BackupData, 'version' | 'exporte
     sessions: data.sessions ?? [],
     personalRecords: data.personalRecords ?? {},
     settings: data.settings ?? {},
+    foods: data.foods ?? [],
+    dailyMacroLogs: data.dailyMacroLogs ?? [],
+    macroTargets: data.macroTargets,
+    bodyMeasurements: data.bodyMeasurements ?? [],
   }
 }

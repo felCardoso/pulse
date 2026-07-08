@@ -22,6 +22,10 @@ export default function ConfiguracoesPage() {
   const templates = usePulseStore((s) => s.templates)
   const sessions = usePulseStore((s) => s.sessions)
   const personalRecords = usePulseStore((s) => s.personalRecords)
+  const foods = usePulseStore((s) => s.foods)
+  const dailyMacroLogs = usePulseStore((s) => s.dailyMacroLogs)
+  const macroTargets = usePulseStore((s) => s.macroTargets)
+  const bodyMeasurements = usePulseStore((s) => s.bodyMeasurements)
   const importRef = useRef<HTMLInputElement>(null)
   const [importError, setImportError] = useState<string | null>(null)
   const [importSuccess, setImportSuccess] = useState(false)
@@ -32,7 +36,16 @@ export default function ConfiguracoesPage() {
   }
 
   const handleExport = () => {
-    exportBackup({ templates, sessions, personalRecords, settings })
+    exportBackup({
+      templates,
+      sessions,
+      personalRecords,
+      settings,
+      foods,
+      dailyMacroLogs,
+      macroTargets,
+      bodyMeasurements,
+    })
   }
 
   const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,6 +62,10 @@ export default function ConfiguracoesPage() {
           sessions: data.sessions,
           personalRecords: data.personalRecords,
           settings: { ...settings, ...data.settings },
+          foods: data.foods ?? [],
+          dailyMacroLogs: data.dailyMacroLogs ?? [],
+          ...(data.macroTargets && { macroTargets: data.macroTargets }),
+          bodyMeasurements: data.bodyMeasurements ?? [],
         })
         setImportSuccess(true)
       } catch {
@@ -66,6 +83,9 @@ export default function ConfiguracoesPage() {
       sessions: [],
       activeSession: null,
       personalRecords: {},
+      foods: [],
+      dailyMacroLogs: [],
+      bodyMeasurements: [],
     })
   }
 
@@ -183,6 +203,38 @@ export default function ConfiguracoesPage() {
               <span
                 className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${
                   settings.soundEnabled ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Body progress */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Progresso Corporal
+        </h2>
+        <div className="rounded-xl border border-border bg-card px-4 py-3.5">
+          <div className="flex items-center justify-between">
+            <div className="pr-3">
+              <Label className="cursor-pointer">Bioimpedância</Label>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Sua balança mede gordura, músculo e água? Ative para registrar
+                e acompanhar esses dados na aba Progresso.
+              </p>
+            </div>
+            <button
+              role="switch"
+              aria-checked={!!settings.bioimpedance}
+              onClick={() => updateSettings({ bioimpedance: !settings.bioimpedance })}
+              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+                settings.bioimpedance ? 'bg-primary' : 'bg-secondary'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${
+                  settings.bioimpedance ? 'translate-x-6' : 'translate-x-1'
                 }`}
               />
             </button>

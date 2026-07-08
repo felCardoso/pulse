@@ -13,6 +13,7 @@ import type {
   MacroFood,
   DailyMacroLog,
   MacroTargets,
+  BodyMeasurement,
 } from '@/types'
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -21,6 +22,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   defaultRestSeconds: 90,
   hapticEnabled: true,
   soundEnabled: true,
+  bioimpedance: false,
 }
 
 interface PulseStore {
@@ -34,6 +36,9 @@ interface PulseStore {
   foods: MacroFood[]
   dailyMacroLogs: DailyMacroLog[]
   macroTargets: MacroTargets
+
+  // Body progress
+  bodyMeasurements: BodyMeasurement[]
 
   // Template actions
   addTemplate: (template: Omit<WorkoutTemplate, 'id' | 'createdAt' | 'updatedAt'>) => WorkoutTemplate
@@ -59,6 +64,10 @@ interface PulseStore {
   logMeal: (foodId: string, gramsConsumed: number, time?: string) => DailyMacroLog | null
   getDayTotals: (date?: string) => { kcal: number; protein: number; carbs: number; fat: number; logs: DailyMacroLog[] }
   cleanupOldFoods: () => void
+
+  // Body progress actions
+  addBodyMeasurement: (data: Omit<BodyMeasurement, 'id'>) => BodyMeasurement
+  deleteBodyMeasurement: (id: string) => void
 
   // Computed
   getExerciseLibrary: () => string[]
@@ -111,6 +120,7 @@ export const usePulseStore = create<PulseStore>()(
       foods: [],
       dailyMacroLogs: [],
       macroTargets: { kcal: 2900, protein: 230, carbs: 290, fat: 97 },
+      bodyMeasurements: [],
 
       addTemplate: (data) => {
         const now = new Date().toISOString()
@@ -371,6 +381,23 @@ export const usePulseStore = create<PulseStore>()(
           foods: s.foods.filter(
             (f) => !f.lastUsedAt || f.lastUsedAt > thirtyDaysAgo
           ),
+        }))
+      },
+
+      addBodyMeasurement: (data) => {
+        const measurement: BodyMeasurement = { ...data, id: uuid() }
+        set((s) => ({
+          // Keep sorted by date ascending — charts and deltas rely on it.
+          bodyMeasurements: [...s.bodyMeasurements, measurement].sort((a, b) =>
+            a.date.localeCompare(b.date)
+          ),
+        }))
+        return measurement
+      },
+
+      deleteBodyMeasurement: (id) => {
+        set((s) => ({
+          bodyMeasurements: s.bodyMeasurements.filter((m) => m.id !== id),
         }))
       },
     }),

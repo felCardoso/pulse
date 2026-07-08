@@ -50,7 +50,7 @@ export default function SessaoPage() {
   const handleFinish = () => {
     const session = finishWorkout()
     if (session) {
-      router.push(`/historico/${session.id}`)
+      router.push(`/treinos/historico/${session.id}`)
     }
   }
 
