@@ -40,6 +40,10 @@ interface PulseStore {
   // Body progress
   bodyMeasurements: BodyMeasurement[]
 
+  // Global rest timer — lives in the store so the countdown pill survives
+  // navigation between tabs (and even an app reload, since it persists).
+  rest: { endsAt: number; totalSeconds: number } | null
+
   // Template actions
   addTemplate: (template: Omit<WorkoutTemplate, 'id' | 'createdAt' | 'updatedAt'>) => WorkoutTemplate
   updateTemplate: (id: string, data: Partial<Omit<WorkoutTemplate, 'id' | 'createdAt'>>) => void
@@ -69,6 +73,11 @@ interface PulseStore {
   // Body progress actions
   addBodyMeasurement: (data: Omit<BodyMeasurement, 'id'>) => BodyMeasurement
   deleteBodyMeasurement: (id: string) => void
+
+  // Rest timer actions
+  startRest: (seconds: number) => void
+  adjustRest: (deltaSeconds: number) => void
+  stopRest: () => void
 
   // Computed
   getExerciseLibrary: () => string[]
@@ -122,6 +131,7 @@ export const usePulseStore = create<PulseStore>()(
       dailyMacroLogs: [],
       macroTargets: { kcal: 2900, protein: 230, carbs: 290, fat: 97 },
       bodyMeasurements: [],
+      rest: null,
 
       addTemplate: (data) => {
         const now = new Date().toISOString()
@@ -248,13 +258,14 @@ export const usePulseStore = create<PulseStore>()(
         set((s) => ({
           sessions: [completedSession, ...s.sessions],
           activeSession: null,
+          rest: null,
         }))
 
         return completedSession
       },
 
       cancelWorkout: () => {
-        set({ activeSession: null })
+        set({ activeSession: null, rest: null })
       },
 
       updateSession: (id, data) => {
@@ -405,6 +416,26 @@ export const usePulseStore = create<PulseStore>()(
           bodyMeasurements: s.bodyMeasurements.filter((m) => m.id !== id),
         }))
       },
+
+      startRest: (seconds) => {
+        set({ rest: { endsAt: Date.now() + seconds * 1000, totalSeconds: seconds } })
+      },
+
+      adjustRest: (deltaSeconds) => {
+        set((s) => {
+          if (!s.rest) return {}
+          return {
+            rest: {
+              // Never adjust below ~1s so the countdown always ends naturally
+              // (with the end-of-rest feedback) instead of jumping negative.
+              endsAt: Math.max(Date.now() + 1000, s.rest.endsAt + deltaSeconds * 1000),
+              totalSeconds: Math.max(1, s.rest.totalSeconds + deltaSeconds),
+            },
+          }
+        })
+      },
+
+      stopRest: () => set({ rest: null }),
     }),
     {
       name: 'pulse-store',

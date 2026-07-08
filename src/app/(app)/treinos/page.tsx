@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, Play, Dumbbell, Zap, Flame, Clock, ChevronRight } from 'lucide-react'
+import { Plus, Play, Dumbbell, Zap, Flame, Clock, ChevronRight, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import TemplateCard from '@/components/template/TemplateCard'
 import SessionCard from '@/components/history/SessionCard'
@@ -16,6 +16,8 @@ export default function TreinosPage() {
   const activeSession = usePulseStore((s) => s.activeSession)
   const startWorkout = usePulseStore((s) => s.startWorkout)
   const getSessionsThisWeek = usePulseStore((s) => s.getSessionsThisWeek)
+  const personalRecords = usePulseStore((s) => s.personalRecords)
+  const recordCount = Object.keys(personalRecords).length
 
   const completedSessions = sessions.filter((s) => s.status === 'completed')
   const streak = computeStreak(completedSessions)
@@ -119,6 +121,25 @@ export default function TreinosPage() {
             <p className="text-[11px] text-muted-foreground">tempo total</p>
           </div>
         </div>
+      )}
+
+      {/* Personal records shortcut */}
+      {recordCount > 0 && (
+        <Link
+          href="/treinos/recordes"
+          className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3.5 transition-colors hover:border-primary/40"
+        >
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/15">
+            <Trophy className="h-4 w-4 text-amber-500" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground">Recordes Pessoais</p>
+            <p className="text-xs text-muted-foreground">
+              {recordCount} exercício{recordCount !== 1 ? 's' : ''} com recorde
+            </p>
+          </div>
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+        </Link>
       )}
 
       {/* Saved templates */}

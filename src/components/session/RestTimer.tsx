@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { SkipForward, Plus, Minus } from 'lucide-react'
+import { usePulseStore } from '@/store/pulse-store'
 import { useHaptic } from '@/hooks/useHaptic'
 import { useSound } from '@/hooks/useSound'
-import { useRestTimer } from '@/hooks/useRestTimer'
 import { requestNotificationPermission, notifyRestEnd } from '@/lib/notifications'
 import { formatRestTime } from '@/utils/format'
 
@@ -13,47 +13,88 @@ const STROKE = 4
 const RADIUS = (SIZE - STROKE) / 2
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS
 
-interface Props {
-  seconds: number
-  isActive: boolean
-  onEnd: () => void
-  onSkip: () => void
-  /** e.g. "Supino reto · série 3/4" — shown so the user knows what's next */
-  nextLabel?: string
-}
+// Global, non-blocking rest-timer pill. State lives in the store, so the
+// countdown survives navigating to any tab (and even an app reload).
+// Mounted once in the (app) layout.
+export default function RestTimer() {
+  const rest = usePulseStore((s) => s.rest)
+  const stopRest = usePulseStore((s) => s.stopRest)
+  const adjustRest = usePulseStore((s) => s.adjustRest)
+  const activeSession = usePulseStore((s) => s.activeSession)
 
-// Compact floating pill — does NOT block the screen, so the user can
-// browse exercises and pre-fill the next set while resting.
-export default function RestTimer({ seconds, isActive, onEnd, onSkip, nextLabel }: Props) {
   const haptic = useHaptic()
   const sound = useSound()
+  const [now, setNow] = useState(() => Date.now())
+  const endedRef = useRef(false)
 
-  const handleEnd = () => {
-    haptic.restEnd()
-    sound.restEnd()
-    notifyRestEnd()
-    onEnd()
-  }
-
-  const { timeLeft, totalSeconds, start, skip, addTime } = useRestTimer(handleEnd)
+  const endsAt = rest?.endsAt
 
   useEffect(() => {
-    if (isActive && seconds > 0) {
-      // Piggyback on the ✓-tap gesture to ask for notification permission.
-      requestNotificationPermission()
-      start(seconds)
+    if (!endsAt) return
+
+    // Stale entry from a previous visit (e.g. app reopened long after the
+    // rest ended): clear silently, without end-of-rest feedback.
+    if (Date.now() > endsAt + 3000) {
+      stopRest()
+      return
     }
-  }, [isActive, seconds]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const progress = totalSeconds > 0 ? timeLeft / totalSeconds : 0
-  const strokeDashoffset = CIRCUMFERENCE * (1 - progress)
+    requestNotificationPermission()
+    endedRef.current = false
+    let raf: number
 
-  const handleSkip = () => {
-    skip()
-    onSkip()
-  }
+    const end = () => {
+      if (endedRef.current) return
+      endedRef.current = true
+      haptic.restEnd()
+      sound.restEnd()
+      notifyRestEnd()
+      stopRest()
+    }
 
-  if (!isActive) return null
+    const tick = () => {
+      setNow(Date.now())
+      if (Date.now() < endsAt) {
+        raf = requestAnimationFrame(tick)
+      } else {
+        end()
+      }
+    }
+
+    raf = requestAnimationFrame(tick)
+    // rAF pauses in background — this backup fires the end feedback (and
+    // the local notification) even with the tab hidden.
+    const timeout = setTimeout(end, Math.max(0, endsAt - Date.now()))
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        cancelAnimationFrame(raf)
+        raf = requestAnimationFrame(tick)
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible)
+
+    return () => {
+      cancelAnimationFrame(raf)
+      clearTimeout(timeout)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [endsAt]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!rest) return null
+
+  const timeLeft = Math.max(0, Math.ceil((rest.endsAt - now) / 1000))
+  const progress = rest.totalSeconds > 0 ? timeLeft / rest.totalSeconds : 0
+  const strokeDashoffset = CIRCUMFERENCE * (1 - Math.min(1, progress))
+
+  // "Supino reto · série 3/4" — what comes after the rest.
+  const currentExercise = activeSession?.exercises.find((e) => !e.completed)
+  const nextSet = currentExercise?.sets.find((s) => !s.done)
+  const nextLabel = currentExercise
+    ? nextSet
+      ? `${currentExercise.name} · série ${nextSet.setNumber}/${currentExercise.sets.length}`
+      : currentExercise.name
+    : undefined
 
   return (
     <div
@@ -104,14 +145,14 @@ export default function RestTimer({ seconds, isActive, onEnd, onSkip, nextLabel 
 
           {/* −15s / +15s */}
           <button
-            onClick={() => addTime(-15)}
+            onClick={() => adjustRest(-15)}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground transition-colors hover:bg-secondary/70 active:scale-95"
             aria-label="Diminuir 15 segundos"
           >
             <Minus className="h-4 w-4" />
           </button>
           <button
-            onClick={() => addTime(15)}
+            onClick={() => adjustRest(15)}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground transition-colors hover:bg-secondary/70 active:scale-95"
             aria-label="Aumentar 15 segundos"
           >
@@ -120,7 +161,7 @@ export default function RestTimer({ seconds, isActive, onEnd, onSkip, nextLabel 
 
           {/* Skip */}
           <button
-            onClick={handleSkip}
+            onClick={stopRest}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary transition-colors hover:bg-primary hover:text-primary-foreground active:scale-95"
             aria-label="Pular descanso"
           >

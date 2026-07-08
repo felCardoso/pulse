@@ -1,5 +1,6 @@
 import BottomNav from '@/components/layout/BottomNav'
 import StoreHydration from '@/components/StoreHydration'
+import RestTimer from '@/components/session/RestTimer'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -12,6 +13,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <BottomNav />
+      {/* Global rest-timer pill — visible on any tab while resting */}
+      <RestTimer />
     </div>
   )
 }
