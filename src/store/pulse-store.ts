@@ -56,7 +56,7 @@ interface PulseStore {
   addFood: (food: Omit<MacroFood, 'id' | 'lastUsedAt'>) => MacroFood
   updateFood: (id: string, data: Partial<MacroFood>) => void
   deleteFood: (id: string) => void
-  logMeal: (foodId: string, gramsConsumed: number) => DailyMacroLog | null
+  logMeal: (foodId: string, gramsConsumed: number, time?: string) => DailyMacroLog | null
   getDayTotals: (date?: string) => { kcal: number; protein: number; carbs: number; fat: number; logs: DailyMacroLog[] }
   cleanupOldFoods: () => void
 
@@ -308,7 +308,7 @@ export const usePulseStore = create<PulseStore>()(
         set((s) => ({ foods: s.foods.filter((f) => f.id !== id) }))
       },
 
-      logMeal: (foodId, gramsConsumed) => {
+      logMeal: (foodId, gramsConsumed, time) => {
         const state = get()
         const food = state.foods.find((f) => f.id === foodId)
         if (!food) return null
@@ -317,6 +317,15 @@ export const usePulseStore = create<PulseStore>()(
         const protein = Math.round((food.proteinPer100g * gramsConsumed) / 100 * 10) / 10
         const carbs = Math.round((food.carbsPer100g * gramsConsumed) / 100 * 10) / 10
         const fat = Math.round((food.fatPer100g * gramsConsumed) / 100 * 10) / 10
+
+        // Optional "HH:MM" sets the meal's time (today's date is kept).
+        const when = new Date()
+        if (time) {
+          const [h, m] = time.split(':').map(Number)
+          if (Number.isFinite(h) && Number.isFinite(m) && h >= 0 && h < 24 && m >= 0 && m < 60) {
+            when.setHours(h, m, 0, 0)
+          }
+        }
 
         const log: DailyMacroLog = {
           id: uuid(),
@@ -328,7 +337,7 @@ export const usePulseStore = create<PulseStore>()(
           protein,
           carbs,
           fat,
-          timestamp: new Date().toISOString(),
+          timestamp: when.toISOString(),
         }
 
         set((s) => ({

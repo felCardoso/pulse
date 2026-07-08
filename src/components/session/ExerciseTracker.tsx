@@ -29,6 +29,12 @@ export default function ExerciseTracker({
   useEffect(() => {
     if (isCurrentExercise) setExpanded(true)
   }, [isCurrentExercise])
+
+  // Auto-collapse once every set is done — the store then flips the next
+  // exercise to current, which auto-expands it via the effect above.
+  useEffect(() => {
+    if (exercise.completed) setExpanded(false)
+  }, [exercise.completed])
   const completeSet = usePulseStore((s) => s.completeSet)
   const getLastSessionForExercise = usePulseStore((s) => s.getLastSessionForExercise)
   const haptic = useHaptic()
