@@ -8,6 +8,9 @@ interface Point {
 interface Props {
   points: Point[]
   unit?: string
+  title?: string
+  /** Draws a dashed target line and includes it in the scale */
+  goal?: number | null
 }
 
 const W = 320
@@ -15,10 +18,11 @@ const H = 120
 const PAD = 14
 
 // Lightweight SVG line chart — no chart lib needed for a simple trend.
-export default function WeightChart({ points, unit = 'kg' }: Props) {
+export default function WeightChart({ points, unit = 'kg', title = 'Evolução do peso', goal }: Props) {
   if (points.length === 0) return null
 
   const values = points.map((p) => p.value)
+  if (goal != null) values.push(goal)
   const min = Math.min(...values)
   const max = Math.max(...values)
   const range = max - min || 1
@@ -38,12 +42,37 @@ export default function WeightChart({ points, unit = 'kg' }: Props) {
   return (
     <div className="rounded-xl border border-border bg-card p-4 space-y-2">
       <div className="flex items-baseline justify-between">
-        <p className="text-sm text-muted-foreground">Evolução do peso</p>
+        <p className="text-sm text-muted-foreground">{title}</p>
         <p className="text-xs text-muted-foreground tabular-nums">
-          mín {min}{unit} · máx {max}{unit}
+          mín {Math.min(...points.map((p) => p.value))}{unit} · máx {Math.max(...points.map((p) => p.value))}{unit}
         </p>
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Gráfico de peso">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label={title}>
+        {/* Goal line */}
+        {goal != null && (
+          <>
+            <line
+              x1={PAD}
+              y1={y(goal)}
+              x2={W - PAD}
+              y2={y(goal)}
+              stroke="hsl(var(--primary))"
+              strokeWidth="1.5"
+              strokeDasharray="5 4"
+              opacity="0.55"
+            />
+            <text
+              x={W - PAD}
+              y={y(goal) - 4}
+              textAnchor="end"
+              fontSize="9"
+              fill="hsl(var(--primary))"
+              opacity="0.9"
+            >
+              meta {goal}{unit}
+            </text>
+          </>
+        )}
         {points.length > 1 && (
           <path
             d={path}

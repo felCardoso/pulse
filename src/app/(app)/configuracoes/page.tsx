@@ -26,6 +26,8 @@ export default function ConfiguracoesPage() {
   const dailyMacroLogs = usePulseStore((s) => s.dailyMacroLogs)
   const macroTargets = usePulseStore((s) => s.macroTargets)
   const bodyMeasurements = usePulseStore((s) => s.bodyMeasurements)
+  const weightGoalKg = usePulseStore((s) => s.weightGoalKg)
+  const progressPhotos = usePulseStore((s) => s.progressPhotos)
   const importRef = useRef<HTMLInputElement>(null)
   const [importError, setImportError] = useState<string | null>(null)
   const [importSuccess, setImportSuccess] = useState(false)
@@ -45,6 +47,8 @@ export default function ConfiguracoesPage() {
       dailyMacroLogs,
       macroTargets,
       bodyMeasurements,
+      weightGoalKg,
+      progressPhotos,
     })
   }
 
@@ -66,6 +70,8 @@ export default function ConfiguracoesPage() {
           dailyMacroLogs: data.dailyMacroLogs ?? [],
           ...(data.macroTargets && { macroTargets: data.macroTargets }),
           bodyMeasurements: data.bodyMeasurements ?? [],
+          weightGoalKg: data.weightGoalKg ?? null,
+          progressPhotos: data.progressPhotos ?? [],
         })
         setImportSuccess(true)
       } catch {
@@ -86,6 +92,8 @@ export default function ConfiguracoesPage() {
       foods: [],
       dailyMacroLogs: [],
       bodyMeasurements: [],
+      weightGoalKg: null,
+      progressPhotos: [],
     })
   }
 

@@ -110,3 +110,11 @@ export interface BodyMeasurement {
   waterPct?: number
   visceralFat?: number
 }
+
+export interface ProgressPhoto {
+  id: string
+  /** YYYY-MM-DD */
+  date: string
+  /** Compressed JPEG data URL (kept small — localStorage is ~5MB) */
+  dataUrl: string
+}

@@ -14,6 +14,7 @@ import type {
   DailyMacroLog,
   MacroTargets,
   BodyMeasurement,
+  ProgressPhoto,
 } from '@/types'
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -39,6 +40,8 @@ interface PulseStore {
 
   // Body progress
   bodyMeasurements: BodyMeasurement[]
+  weightGoalKg: number | null
+  progressPhotos: ProgressPhoto[]
 
   // Global rest timer — lives in the store so the countdown pill survives
   // navigation between tabs (and even an app reload, since it persists).
@@ -73,6 +76,9 @@ interface PulseStore {
   // Body progress actions
   addBodyMeasurement: (data: Omit<BodyMeasurement, 'id'>) => BodyMeasurement
   deleteBodyMeasurement: (id: string) => void
+  setWeightGoal: (kg: number | null) => void
+  addProgressPhoto: (dataUrl: string) => ProgressPhoto
+  deleteProgressPhoto: (id: string) => void
 
   // Rest timer actions
   startRest: (seconds: number) => void
@@ -131,6 +137,8 @@ export const usePulseStore = create<PulseStore>()(
       dailyMacroLogs: [],
       macroTargets: { kcal: 2900, protein: 230, carbs: 290, fat: 97 },
       bodyMeasurements: [],
+      weightGoalKg: null,
+      progressPhotos: [],
       rest: null,
 
       addTemplate: (data) => {
@@ -415,6 +423,22 @@ export const usePulseStore = create<PulseStore>()(
         set((s) => ({
           bodyMeasurements: s.bodyMeasurements.filter((m) => m.id !== id),
         }))
+      },
+
+      setWeightGoal: (kg) => set({ weightGoalKg: kg }),
+
+      addProgressPhoto: (dataUrl) => {
+        const photo: ProgressPhoto = {
+          id: uuid(),
+          date: new Date().toISOString().split('T')[0],
+          dataUrl,
+        }
+        set((s) => ({ progressPhotos: [...s.progressPhotos, photo] }))
+        return photo
+      },
+
+      deleteProgressPhoto: (id) => {
+        set((s) => ({ progressPhotos: s.progressPhotos.filter((p) => p.id !== id) }))
       },
 
       startRest: (seconds) => {

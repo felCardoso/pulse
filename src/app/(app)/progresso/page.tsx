@@ -1,12 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Scale, Bell } from 'lucide-react'
+import { Plus, Scale, Bell, Target } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { usePulseStore } from '@/store/pulse-store'
 import WeightChart from '@/components/progress/WeightChart'
 import MeasurementSheet from '@/components/progress/MeasurementSheet'
 import MeasurementList from '@/components/progress/MeasurementList'
+import WeightGoalSheet from '@/components/progress/WeightGoalSheet'
+import ProgressPhotos from '@/components/progress/ProgressPhotos'
 
 const BIO_CARDS = [
   { key: 'bodyFatPct', label: 'Gordura', unit: '%' },
@@ -19,7 +21,9 @@ export default function ProgressoPage() {
   const bodyMeasurements = usePulseStore((s) => s.bodyMeasurements)
   const bioimpedance = usePulseStore((s) => !!s.settings.bioimpedance)
   const weightUnit = usePulseStore((s) => s.settings.weightUnit)
+  const weightGoalKg = usePulseStore((s) => s.weightGoalKg)
   const [showSheet, setShowSheet] = useState(false)
+  const [showGoalSheet, setShowGoalSheet] = useState(false)
 
   const latest = bodyMeasurements[bodyMeasurements.length - 1]
   const previous = bodyMeasurements[bodyMeasurements.length - 2]
@@ -44,6 +48,22 @@ export default function ProgressoPage() {
   }))
 
   const fmtDelta = (d: number) => `${d > 0 ? '+' : ''}${d} ${weightUnit}`
+
+  // Distance to the weight goal (absolute — works for bulking or cutting).
+  const goalDistance =
+    latest && weightGoalKg != null
+      ? Math.round(Math.abs(latest.weightKg - weightGoalKg) * 10) / 10
+      : null
+  const goalReached = goalDistance !== null && goalDistance <= 0.5
+
+  const bioChart = (key: 'bodyFatPct' | 'musclePct') =>
+    bodyMeasurements
+      .filter((m) => m[key] != null)
+      .slice(-12)
+      .map((m) => ({ date: m.date, value: m[key] as number }))
+
+  const fatPoints = bioimpedance ? bioChart('bodyFatPct') : []
+  const musclePoints = bioimpedance ? bioChart('musclePct') : []
 
   return (
     <div className="space-y-6">
@@ -94,35 +114,69 @@ export default function ProgressoPage() {
         </div>
       )}
 
-      {/* Current weight + deltas */}
+      {/* Current weight + deltas + goal */}
       {latest && (
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-sm text-muted-foreground">Peso atual</p>
-          <div className="flex items-end justify-between gap-2">
-            <p className="text-3xl font-bold text-foreground tabular-nums">
-              {latest.weightKg}
-              <span className="text-base text-muted-foreground font-normal ml-1">{weightUnit}</span>
-            </p>
-            <div className="text-right text-xs text-muted-foreground tabular-nums">
-              {weightDelta !== null && (
-                <p>
-                  vs anterior:{' '}
-                  <span className="font-semibold text-foreground">{fmtDelta(weightDelta)}</span>
-                </p>
-              )}
-              {totalDelta !== null && (
-                <p>
-                  total:{' '}
-                  <span className="font-semibold text-foreground">{fmtDelta(totalDelta)}</span>
-                </p>
-              )}
+        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+          <div>
+            <p className="text-sm text-muted-foreground">Peso atual</p>
+            <div className="flex items-end justify-between gap-2">
+              <p className="text-3xl font-bold text-foreground tabular-nums">
+                {latest.weightKg}
+                <span className="text-base text-muted-foreground font-normal ml-1">{weightUnit}</span>
+              </p>
+              <div className="text-right text-xs text-muted-foreground tabular-nums">
+                {weightDelta !== null && (
+                  <p>
+                    vs anterior:{' '}
+                    <span className="font-semibold text-foreground">{fmtDelta(weightDelta)}</span>
+                  </p>
+                )}
+                {totalDelta !== null && (
+                  <p>
+                    total:{' '}
+                    <span className="font-semibold text-foreground">{fmtDelta(totalDelta)}</span>
+                  </p>
+                )}
+              </div>
             </div>
           </div>
+
+          {/* Weight goal row */}
+          <button
+            onClick={() => setShowGoalSheet(true)}
+            className="flex w-full items-center gap-2 rounded-lg border border-border bg-secondary/50 px-3 py-2 text-left transition-colors hover:border-primary/40"
+          >
+            <Target className="h-4 w-4 shrink-0 text-primary" />
+            {weightGoalKg != null ? (
+              <span className="text-xs text-foreground tabular-nums">
+                Meta: <span className="font-semibold">{weightGoalKg} {weightUnit}</span>
+                {goalReached ? (
+                  <span className="ml-1.5 font-semibold text-primary">Meta atingida! 🎯</span>
+                ) : (
+                  goalDistance !== null && (
+                    <span className="text-muted-foreground"> · faltam {goalDistance} {weightUnit}</span>
+                  )
+                )}
+              </span>
+            ) : (
+              <span className="text-xs text-muted-foreground">Definir meta de peso</span>
+            )}
+          </button>
         </div>
       )}
 
       {/* Weight chart */}
-      {chartPoints.length > 1 && <WeightChart points={chartPoints} unit={weightUnit} />}
+      {chartPoints.length > 1 && (
+        <WeightChart points={chartPoints} unit={weightUnit} goal={weightGoalKg} />
+      )}
+
+      {/* Bioimpedance trend charts */}
+      {fatPoints.length > 1 && (
+        <WeightChart points={fatPoints} unit="%" title="Gordura corporal" />
+      )}
+      {musclePoints.length > 1 && (
+        <WeightChart points={musclePoints} unit="%" title="Massa muscular" />
+      )}
 
       {/* Bioimpedance cards */}
       {bioimpedance && latest && (
@@ -153,10 +207,14 @@ export default function ProgressoPage() {
         </div>
       )}
 
+      {/* Progress photos */}
+      <ProgressPhotos />
+
       {/* History */}
       <MeasurementList />
 
       {showSheet && <MeasurementSheet onClose={() => setShowSheet(false)} />}
+      {showGoalSheet && <WeightGoalSheet onClose={() => setShowGoalSheet(false)} />}
     </div>
   )
 }
