@@ -64,6 +64,7 @@ interface PulseStore {
   logMeal: (foodId: string, gramsConsumed: number, time?: string) => DailyMacroLog | null
   getDayTotals: (date?: string) => { kcal: number; protein: number; carbs: number; fat: number; logs: DailyMacroLog[] }
   cleanupOldFoods: () => void
+  updateMacroTargets: (data: Partial<MacroTargets>) => void
 
   // Body progress actions
   addBodyMeasurement: (data: Omit<BodyMeasurement, 'id'>) => BodyMeasurement
@@ -382,6 +383,10 @@ export const usePulseStore = create<PulseStore>()(
             (f) => !f.lastUsedAt || f.lastUsedAt > thirtyDaysAgo
           ),
         }))
+      },
+
+      updateMacroTargets: (data) => {
+        set((s) => ({ macroTargets: { ...s.macroTargets, ...data } }))
       },
 
       addBodyMeasurement: (data) => {
