@@ -56,8 +56,13 @@ export default function RestTimer({ seconds, isActive, onEnd, onSkip, nextLabel 
   if (!isActive) return null
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-safe">
-      <div className="pointer-events-auto mb-3 w-full max-w-lg rounded-2xl border border-primary/30 bg-background/95 shadow-lg shadow-black/40 backdrop-blur-md">
+    <div
+      className="pointer-events-none fixed inset-x-0 z-50 flex justify-center px-4"
+      // Sits above the bottom nav (z-40, ~4rem tall) so the countdown is
+      // never covered by it on mobile.
+      style={{ bottom: 'calc(4.5rem + env(safe-area-inset-bottom, 0px))' }}
+    >
+      <div className="pointer-events-auto w-full max-w-lg rounded-2xl border border-primary/30 bg-background/95 shadow-lg shadow-black/40 backdrop-blur-md">
         <div className="flex items-center gap-3 px-3 py-2.5">
           {/* Mini progress ring with countdown */}
           <div className="relative shrink-0">

@@ -87,7 +87,7 @@ export default function LivreSessaoPage() {
           progress={{ done: doneCount, total: totalCount }}
           onCancel={handleCancel}
         />
-        <div className="flex-1 overflow-y-auto px-4 py-4 pb-28 max-w-lg mx-auto w-full space-y-3">
+        <div className="flex-1 overflow-y-auto px-4 py-4 pb-40 max-w-lg mx-auto w-full space-y-3">
           {exercises.map((exercise) => (
             <ExerciseTracker
               key={exercise.id}
