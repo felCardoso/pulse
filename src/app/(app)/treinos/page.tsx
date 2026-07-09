@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Plus, Play, Dumbbell, Zap, Flame, Clock, ChevronRight, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import TemplateCard from '@/components/template/TemplateCard'
+import WeeklyScheduleCard from '@/components/template/WeeklyScheduleCard'
 import SessionCard from '@/components/history/SessionCard'
 import { usePulseStore } from '@/store/pulse-store'
 import { calcTotalVolume, computeStreak, formatDuration } from '@/utils/format'
@@ -192,6 +193,9 @@ export default function TreinosPage() {
           })
         )}
       </div>
+
+      {/* Weekly schedule (tap a day to assign a template) */}
+      <WeeklyScheduleCard />
 
       {/* Free workout */}
       {templates.length > 0 && (

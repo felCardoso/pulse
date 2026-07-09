@@ -46,8 +46,16 @@ export default function OnboardingFlow() {
   )
 
   // Wait for localStorage hydration so existing users never see a flash.
-  const [hydrated, setHydrated] = useState(() => usePulseStore.persist.hasHydrated())
-  useEffect(() => usePulseStore.persist.onFinishHydration(() => setHydrated(true)), [])
+  // persist API is unavailable during SSR/prerender — only touch it in
+  // an effect (this is what broke the Vercel build when accessed in render).
+  const [hydrated, setHydrated] = useState(false)
+  useEffect(() => {
+    if (usePulseStore.persist?.hasHydrated()) {
+      setHydrated(true)
+      return
+    }
+    return usePulseStore.persist?.onFinishHydration(() => setHydrated(true))
+  }, [])
 
   // Existing users (data present but flag missing) skip silently.
   useEffect(() => {
