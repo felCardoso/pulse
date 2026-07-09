@@ -46,6 +46,9 @@ interface PulseStore {
   // Weekly schedule: weekday (0=Sunday … 6=Saturday, as string) → templateId
   weeklySchedule: Record<string, string>
 
+  // First-launch onboarding
+  onboardingCompleted: boolean
+
   // Global rest timer — lives in the store so the countdown pill survives
   // navigation between tabs (and even an app reload, since it persists).
   rest: { endsAt: number; totalSeconds: number } | null
@@ -85,6 +88,7 @@ interface PulseStore {
   addProgressPhoto: (dataUrl: string) => ProgressPhoto
   deleteProgressPhoto: (id: string) => void
   setWeeklySchedule: (weekday: number, templateId: string | null) => void
+  completeOnboarding: () => void
 
   // Rest timer actions
   startRest: (seconds: number) => void
@@ -151,6 +155,7 @@ export const usePulseStore = create<PulseStore>()(
       weightGoalKg: null,
       progressPhotos: [],
       weeklySchedule: {},
+      onboardingCompleted: false,
       rest: null,
 
       addTemplate: (data) => {
@@ -468,6 +473,8 @@ export const usePulseStore = create<PulseStore>()(
       },
 
       setWeightGoal: (kg) => set({ weightGoalKg: kg }),
+
+      completeOnboarding: () => set({ onboardingCompleted: true }),
 
       setWeeklySchedule: (weekday, templateId) => {
         set((s) => {
