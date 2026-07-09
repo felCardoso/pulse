@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { usePulseStore } from '@/store/pulse-store'
 import { exportBackup, parseBackup } from '@/lib/backup'
 import SavedFoodsManager from '@/components/macros/SavedFoodsManager'
+import ClearDataDialog from '@/components/settings/ClearDataDialog'
 
 const REST_OPTIONS = [
   { label: '30s', value: 30 },
@@ -44,6 +45,7 @@ export default function ConfiguracoesPage() {
   const [importError, setImportError] = useState<string | null>(null)
   const [importSuccess, setImportSuccess] = useState(false)
   const [tab, setTab] = useState<Tab>('geral')
+  const [showClearDialog, setShowClearDialog] = useState(false)
 
   const handleHueChange = (value: number) => {
     document.documentElement.style.setProperty('--primary-hue', String(value))
@@ -98,7 +100,6 @@ export default function ConfiguracoesPage() {
   }
 
   const handleClearData = () => {
-    if (!confirm('Tem certeza? Todos os seus dados serão apagados permanentemente.')) return
     usePulseStore.setState({
       templates: [],
       sessions: [],
@@ -111,6 +112,7 @@ export default function ConfiguracoesPage() {
       progressPhotos: [],
       weeklySchedule: {},
     })
+    setShowClearDialog(false)
   }
 
   const switchButton = (checked: boolean, onToggle: () => void, label: string) => (
@@ -339,7 +341,7 @@ export default function ConfiguracoesPage() {
               <Button
                 variant="outline"
                 className="w-full gap-2 text-destructive hover:text-destructive border-destructive/30"
-                onClick={handleClearData}
+                onClick={() => setShowClearDialog(true)}
               >
                 <Trash2 className="h-4 w-4" />
                 Limpar todos os dados
@@ -351,6 +353,14 @@ export default function ConfiguracoesPage() {
             Pulse · {templates.length} treinos · {sessions.length} sessões
           </p>
         </div>
+      )}
+
+      {showClearDialog && (
+        <ClearDataDialog
+          onCancel={() => setShowClearDialog(false)}
+          onConfirm={handleClearData}
+          onBackup={handleExport}
+        />
       )}
     </div>
   )
