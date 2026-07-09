@@ -77,60 +77,104 @@ export default function ExerciseBlockEditor({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      {/* Strength / Cardio type toggle */}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => onChange({ isCardio: false })}
+          className={cn(
+            'flex-1 rounded-lg py-1.5 text-xs font-medium transition-colors',
+            !exercise.isCardio
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+          )}
+        >
+          Musculação
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange({ isCardio: true, durationMinutes: exercise.durationMinutes ?? 20 })}
+          className={cn(
+            'flex-1 rounded-lg py-1.5 text-xs font-medium transition-colors',
+            exercise.isCardio
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+          )}
+        >
+          Cardio
+        </button>
+      </div>
+
+      {exercise.isCardio ? (
         <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Séries</Label>
+          <Label className="text-xs text-muted-foreground">Tempo (minutos)</Label>
           <Input
             type="number"
             inputMode="numeric"
             min={1}
-            value={exercise.sets}
-            onChange={(e) => onChange({ sets: parseInt(e.target.value) || 1 })}
+            value={exercise.durationMinutes ?? 20}
+            onChange={(e) => onChange({ durationMinutes: parseInt(e.target.value) || 1 })}
             className="h-9 text-center"
           />
         </div>
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Reps</Label>
-          <Input
-            placeholder="10 ou 8-12"
-            value={exercise.reps}
-            onChange={(e) => onChange({ reps: e.target.value })}
-            className="h-9 text-center"
-          />
-        </div>
-      </div>
-
-      <div className="space-y-1">
-        <Label className="text-xs text-muted-foreground">Descanso</Label>
-        <div className="flex flex-wrap gap-1.5">
-          {REST_PRESETS.map((p) => (
-            <button
-              key={p.value}
-              type="button"
-              onClick={() => onChange({ restSeconds: p.value })}
-              className={cn(
-                'rounded-full px-3 py-1 text-xs font-medium transition-colors',
-                exercise.restSeconds === p.value
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-              )}
-            >
-              {p.label}
-            </button>
-          ))}
-          <div className="flex items-center gap-1">
-            <Input
-              type="number"
-              inputMode="numeric"
-              min={0}
-              value={exercise.restSeconds}
-              onChange={(e) => onChange({ restSeconds: parseInt(e.target.value) || 0 })}
-              className="h-7 w-16 text-center text-xs"
-            />
-            <span className="text-xs text-muted-foreground">s</span>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Séries</Label>
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                value={exercise.sets}
+                onChange={(e) => onChange({ sets: parseInt(e.target.value) || 1 })}
+                className="h-9 text-center"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Reps</Label>
+              <Input
+                placeholder="10 ou 8-12"
+                value={exercise.reps}
+                onChange={(e) => onChange({ reps: e.target.value })}
+                className="h-9 text-center"
+              />
+            </div>
           </div>
-        </div>
-      </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Descanso</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {REST_PRESETS.map((p) => (
+                <button
+                  key={p.value}
+                  type="button"
+                  onClick={() => onChange({ restSeconds: p.value })}
+                  className={cn(
+                    'rounded-full px-3 py-1 text-xs font-medium transition-colors',
+                    exercise.restSeconds === p.value
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                  )}
+                >
+                  {p.label}
+                </button>
+              ))}
+              <div className="flex items-center gap-1">
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  value={exercise.restSeconds}
+                  onChange={(e) => onChange({ restSeconds: parseInt(e.target.value) || 0 })}
+                  className="h-7 w-16 text-center text-xs"
+                />
+                <span className="text-xs text-muted-foreground">s</span>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {exercise.notes !== undefined && (
         <div className="space-y-1">

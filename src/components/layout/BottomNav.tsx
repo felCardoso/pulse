@@ -2,13 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Dumbbell, Clock, Settings, Flame } from 'lucide-react'
+import { Dumbbell, TrendingUp, Settings, Flame } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const tabs = [
   { href: '/treinos', label: 'Treinos', icon: Dumbbell, match: '/treinos' },
   { href: '/macros', label: 'Macros', icon: Flame, match: '/macros' },
-  { href: '/historico', label: 'Histórico', icon: Clock, match: '/historico' },
+  { href: '/progresso', label: 'Progresso', icon: TrendingUp, match: '/progresso' },
   { href: '/configuracoes', label: 'Config', icon: Settings, match: '/configuracoes' },
 ]
 

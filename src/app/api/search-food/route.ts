@@ -12,13 +12,26 @@ import { NextRequest, NextResponse } from 'next/server'
 const USER_AGENT =
   'Pulse-Workout-App/1.0 (https://github.com/felCardoso/pulse; pcardoso.felipe@gmail.com)'
 
-const FIELDS = 'product_name,nutriments,code,brands'
+const FIELDS = 'product_name,nutriments,code,brands,countries_tags'
 
 interface Product {
   code?: string
   product_name?: string
   brands?: string
   nutriments?: Record<string, number>
+  countries_tags?: string[]
+}
+
+// Keep only products explicitly tagged as sold in Brazil (taxonomy tags
+// like "en:brazil" / "pt:brasil"). Used to restrict name-search results
+// to the Brazilian market.
+function isBrazilianProduct(product: Product): boolean {
+  const tags = product.countries_tags
+  if (!tags || tags.length === 0) return false
+  return tags.some((t) => {
+    const lower = t.toLowerCase()
+    return lower.includes('brazil') || lower.includes('brasil')
+  })
 }
 
 // In-memory cache (per serverless instance).
@@ -58,10 +71,11 @@ async function lookupByBarcode(barcode: string): Promise<Product[]> {
 }
 
 // Modern search service (search.openfoodfacts.org). Returns { hits: [...] }.
+// Fetch a larger page since results get filtered down to Brazil-only after.
 async function searchAlicious(query: string): Promise<Product[]> {
   const url =
     `https://search.openfoodfacts.org/search?q=${encodeURIComponent(query)}` +
-    `&page_size=10&fields=${FIELDS}`
+    `&page_size=30&fields=${FIELDS}`
   const res = await rateLimitedFetch(url)
   if (!res.ok) throw new Error(`alicious ${res.status}`)
   const data = (await res.json()) as { hits?: Product[] }
@@ -72,7 +86,7 @@ async function searchAlicious(query: string): Promise<Product[]> {
 async function searchLegacy(query: string): Promise<Product[]> {
   const url =
     `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}` +
-    `&search_simple=1&action=process&json=1&page_size=10&fields=${FIELDS}`
+    `&search_simple=1&action=process&json=1&page_size=30&fields=${FIELDS}`
   const res = await rateLimitedFetch(url)
   if (!res.ok) throw new Error(`legacy ${res.status}`)
   const data = (await res.json()) as { products?: Product[] }
@@ -120,6 +134,10 @@ export async function GET(request: NextRequest) {
       }
       if (products.length === 0) {
         products = await searchByName(query)
+        // Restrict name-search results to products sold in Brazil.
+        // Barcode lookups are left unfiltered — a scanned product is the
+        // exact item the user has in hand, regardless of its tags.
+        products = products.filter(isBrazilianProduct)
       }
     }
 

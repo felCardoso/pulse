@@ -53,3 +53,27 @@ export function calcTotalVolume(
     )
   }, 0)
 }
+
+export function computeStreak(sessions: { startedAt: string; status: string }[]): number {
+  const completed = sessions.filter((s) => s.status === 'completed')
+  const dates = Array.from(
+    new Set(completed.map((s) => s.startedAt.split('T')[0]))
+  ).sort().reverse()
+
+  let streak = 0
+  let expected = new Date()
+  expected.setHours(0, 0, 0, 0)
+
+  for (const dateStr of dates) {
+    const d = new Date(dateStr)
+    d.setHours(0, 0, 0, 0)
+    const diff = Math.round((expected.getTime() - d.getTime()) / 86400000)
+    if (diff <= 1) {
+      streak++
+      expected = d
+    } else {
+      break
+    }
+  }
+  return streak
+}

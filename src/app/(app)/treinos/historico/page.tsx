@@ -1,33 +1,10 @@
 'use client'
 
-import { Flame, Clock } from 'lucide-react'
+import Link from 'next/link'
+import { Flame, Clock, ChevronLeft } from 'lucide-react'
 import SessionCard from '@/components/history/SessionCard'
 import { usePulseStore } from '@/store/pulse-store'
-import { formatRelativeDate } from '@/utils/format'
-
-function computeStreak(sessions: { startedAt: string; status: string }[]): number {
-  const completed = sessions.filter((s) => s.status === 'completed')
-  const dates = Array.from(
-    new Set(completed.map((s) => s.startedAt.split('T')[0]))
-  ).sort().reverse()
-
-  let streak = 0
-  let expected = new Date()
-  expected.setHours(0, 0, 0, 0)
-
-  for (const dateStr of dates) {
-    const d = new Date(dateStr)
-    d.setHours(0, 0, 0, 0)
-    const diff = Math.round((expected.getTime() - d.getTime()) / 86400000)
-    if (diff <= 1) {
-      streak++
-      expected = d
-    } else {
-      break
-    }
-  }
-  return streak
-}
+import { formatRelativeDate, computeStreak } from '@/utils/format'
 
 export default function HistoricoPage() {
   const allSessions = usePulseStore((s) => s.sessions)
@@ -45,7 +22,12 @@ export default function HistoricoPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between pt-2">
-        <h1 className="text-2xl font-bold text-foreground">Histórico</h1>
+        <div className="flex items-center gap-2">
+          <Link href="/treinos" className="text-muted-foreground hover:text-foreground">
+            <ChevronLeft className="h-5 w-5" />
+          </Link>
+          <h1 className="text-2xl font-bold text-foreground">Histórico de Treinos</h1>
+        </div>
         {streak > 0 && (
           <div className="flex items-center gap-1.5 rounded-full bg-orange-500/15 px-3 py-1.5">
             <Flame className="h-4 w-4 text-orange-500" />

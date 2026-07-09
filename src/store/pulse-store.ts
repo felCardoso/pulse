@@ -13,6 +13,8 @@ import type {
   MacroFood,
   DailyMacroLog,
   MacroTargets,
+  BodyMeasurement,
+  ProgressPhoto,
 } from '@/types'
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -21,6 +23,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   defaultRestSeconds: 90,
   hapticEnabled: true,
   soundEnabled: true,
+  bioimpedance: false,
 }
 
 interface PulseStore {
@@ -35,6 +38,21 @@ interface PulseStore {
   dailyMacroLogs: DailyMacroLog[]
   macroTargets: MacroTargets
 
+  // Body progress
+  bodyMeasurements: BodyMeasurement[]
+  weightGoalKg: number | null
+  progressPhotos: ProgressPhoto[]
+
+  // Weekly schedule: weekday (0=Sunday … 6=Saturday, as string) → templateId
+  weeklySchedule: Record<string, string>
+
+  // First-launch onboarding
+  onboardingCompleted: boolean
+
+  // Global rest timer — lives in the store so the countdown pill survives
+  // navigation between tabs (and even an app reload, since it persists).
+  rest: { endsAt: number; totalSeconds: number } | null
+
   // Template actions
   addTemplate: (template: Omit<WorkoutTemplate, 'id' | 'createdAt' | 'updatedAt'>) => WorkoutTemplate
   updateTemplate: (id: string, data: Partial<Omit<WorkoutTemplate, 'id' | 'createdAt'>>) => void
@@ -45,6 +63,8 @@ interface PulseStore {
   updateActiveSession: (data: Partial<WorkoutSession>) => void
   addExerciseToActiveSession: (exercise: Omit<SessionExercise, 'id' | 'order'>) => void
   completeSet: (exerciseId: string, setId: string, weight: number | undefined, reps: number | undefined) => void
+  completeCardioExercise: (exerciseId: string, minutes: number) => void
+  replaceExerciseInActiveSession: (exerciseId: string, newName: string) => void
   finishWorkout: (notes?: string) => WorkoutSession | null
   cancelWorkout: () => void
   updateSession: (id: string, data: Partial<WorkoutSession>) => void
@@ -56,9 +76,24 @@ interface PulseStore {
   addFood: (food: Omit<MacroFood, 'id' | 'lastUsedAt'>) => MacroFood
   updateFood: (id: string, data: Partial<MacroFood>) => void
   deleteFood: (id: string) => void
-  logMeal: (foodId: string, gramsConsumed: number) => DailyMacroLog | null
+  logMeal: (foodId: string, gramsConsumed: number, time?: string) => DailyMacroLog | null
   getDayTotals: (date?: string) => { kcal: number; protein: number; carbs: number; fat: number; logs: DailyMacroLog[] }
   cleanupOldFoods: () => void
+  updateMacroTargets: (data: Partial<MacroTargets>) => void
+
+  // Body progress actions
+  addBodyMeasurement: (data: Omit<BodyMeasurement, 'id'>) => BodyMeasurement
+  deleteBodyMeasurement: (id: string) => void
+  setWeightGoal: (kg: number | null) => void
+  addProgressPhoto: (dataUrl: string) => ProgressPhoto
+  deleteProgressPhoto: (id: string) => void
+  setWeeklySchedule: (weekday: number, templateId: string | null) => void
+  completeOnboarding: () => void
+
+  // Rest timer actions
+  startRest: (seconds: number) => void
+  adjustRest: (deltaSeconds: number) => void
+  stopRest: () => void
 
   // Computed
   getExerciseLibrary: () => string[]
@@ -76,14 +111,19 @@ function buildSessionExercises(exercises: ExerciseTemplate[]): SessionExercise[]
     restSeconds: ex.restSeconds,
     completed: false,
     order: i,
-    sets: Array.from({ length: ex.sets }, (_, si) => ({
-      id: uuid(),
-      setNumber: si + 1,
-      weight: undefined,
-      reps: undefined,
-      done: false,
-      doneAt: undefined,
-    })),
+    isCardio: ex.isCardio,
+    plannedDurationMinutes: ex.isCardio ? ex.durationMinutes ?? 20 : undefined,
+    // Cardio tracks time, not sets.
+    sets: ex.isCardio
+      ? []
+      : Array.from({ length: ex.sets }, (_, si) => ({
+          id: uuid(),
+          setNumber: si + 1,
+          weight: undefined,
+          reps: undefined,
+          done: false,
+          doneAt: undefined,
+        })),
   }))
 }
 
@@ -111,6 +151,12 @@ export const usePulseStore = create<PulseStore>()(
       foods: [],
       dailyMacroLogs: [],
       macroTargets: { kcal: 2900, protein: 230, carbs: 290, fat: 97 },
+      bodyMeasurements: [],
+      weightGoalKg: null,
+      progressPhotos: [],
+      weeklySchedule: {},
+      onboardingCompleted: false,
+      rest: null,
 
       addTemplate: (data) => {
         const now = new Date().toISOString()
@@ -218,6 +264,36 @@ export const usePulseStore = create<PulseStore>()(
         }))
       },
 
+      completeCardioExercise: (exerciseId, minutes) => {
+        const state = get()
+        if (!state.activeSession) return
+        set({
+          activeSession: {
+            ...state.activeSession,
+            exercises: state.activeSession.exercises.map((ex) =>
+              ex.id === exerciseId
+                ? { ...ex, actualDurationMinutes: minutes, completed: true }
+                : ex
+            ),
+          },
+        })
+      },
+
+      replaceExerciseInActiveSession: (exerciseId, newName) => {
+        const state = get()
+        if (!state.activeSession) return
+        set({
+          activeSession: {
+            ...state.activeSession,
+            exercises: state.activeSession.exercises.map((ex) =>
+              ex.id === exerciseId
+                ? { ...ex, name: newName.trim(), templateExerciseId: undefined }
+                : ex
+            ),
+          },
+        })
+      },
+
       finishWorkout: (notes) => {
         const state = get()
         if (!state.activeSession) return null
@@ -237,13 +313,14 @@ export const usePulseStore = create<PulseStore>()(
         set((s) => ({
           sessions: [completedSession, ...s.sessions],
           activeSession: null,
+          rest: null,
         }))
 
         return completedSession
       },
 
       cancelWorkout: () => {
-        set({ activeSession: null })
+        set({ activeSession: null, rest: null })
       },
 
       updateSession: (id, data) => {
@@ -308,7 +385,7 @@ export const usePulseStore = create<PulseStore>()(
         set((s) => ({ foods: s.foods.filter((f) => f.id !== id) }))
       },
 
-      logMeal: (foodId, gramsConsumed) => {
+      logMeal: (foodId, gramsConsumed, time) => {
         const state = get()
         const food = state.foods.find((f) => f.id === foodId)
         if (!food) return null
@@ -317,6 +394,15 @@ export const usePulseStore = create<PulseStore>()(
         const protein = Math.round((food.proteinPer100g * gramsConsumed) / 100 * 10) / 10
         const carbs = Math.round((food.carbsPer100g * gramsConsumed) / 100 * 10) / 10
         const fat = Math.round((food.fatPer100g * gramsConsumed) / 100 * 10) / 10
+
+        // Optional "HH:MM" sets the meal's time (today's date is kept).
+        const when = new Date()
+        if (time) {
+          const [h, m] = time.split(':').map(Number)
+          if (Number.isFinite(h) && Number.isFinite(m) && h >= 0 && h < 24 && m >= 0 && m < 60) {
+            when.setHours(h, m, 0, 0)
+          }
+        }
 
         const log: DailyMacroLog = {
           id: uuid(),
@@ -328,7 +414,7 @@ export const usePulseStore = create<PulseStore>()(
           protein,
           carbs,
           fat,
-          timestamp: new Date().toISOString(),
+          timestamp: when.toISOString(),
         }
 
         set((s) => ({
@@ -364,6 +450,77 @@ export const usePulseStore = create<PulseStore>()(
           ),
         }))
       },
+
+      updateMacroTargets: (data) => {
+        set((s) => ({ macroTargets: { ...s.macroTargets, ...data } }))
+      },
+
+      addBodyMeasurement: (data) => {
+        const measurement: BodyMeasurement = { ...data, id: uuid() }
+        set((s) => ({
+          // Keep sorted by date ascending — charts and deltas rely on it.
+          bodyMeasurements: [...s.bodyMeasurements, measurement].sort((a, b) =>
+            a.date.localeCompare(b.date)
+          ),
+        }))
+        return measurement
+      },
+
+      deleteBodyMeasurement: (id) => {
+        set((s) => ({
+          bodyMeasurements: s.bodyMeasurements.filter((m) => m.id !== id),
+        }))
+      },
+
+      setWeightGoal: (kg) => set({ weightGoalKg: kg }),
+
+      completeOnboarding: () => set({ onboardingCompleted: true }),
+
+      setWeeklySchedule: (weekday, templateId) => {
+        set((s) => {
+          const schedule = { ...s.weeklySchedule }
+          if (templateId) {
+            schedule[String(weekday)] = templateId
+          } else {
+            delete schedule[String(weekday)]
+          }
+          return { weeklySchedule: schedule }
+        })
+      },
+
+      addProgressPhoto: (dataUrl) => {
+        const photo: ProgressPhoto = {
+          id: uuid(),
+          date: new Date().toISOString().split('T')[0],
+          dataUrl,
+        }
+        set((s) => ({ progressPhotos: [...s.progressPhotos, photo] }))
+        return photo
+      },
+
+      deleteProgressPhoto: (id) => {
+        set((s) => ({ progressPhotos: s.progressPhotos.filter((p) => p.id !== id) }))
+      },
+
+      startRest: (seconds) => {
+        set({ rest: { endsAt: Date.now() + seconds * 1000, totalSeconds: seconds } })
+      },
+
+      adjustRest: (deltaSeconds) => {
+        set((s) => {
+          if (!s.rest) return {}
+          return {
+            rest: {
+              // Never adjust below ~1s so the countdown always ends naturally
+              // (with the end-of-rest feedback) instead of jumping negative.
+              endsAt: Math.max(Date.now() + 1000, s.rest.endsAt + deltaSeconds * 1000),
+              totalSeconds: Math.max(1, s.rest.totalSeconds + deltaSeconds),
+            },
+          }
+        })
+      },
+
+      stopRest: () => set({ rest: null }),
     }),
     {
       name: 'pulse-store',

@@ -25,7 +25,7 @@ export default function SessaoDetailPage() {
     return (
       <div className="py-10 text-center text-muted-foreground">
         <p>Sessão não encontrada.</p>
-        <Link href="/historico" className="mt-4 inline-block text-primary text-sm">
+        <Link href="/treinos/historico" className="mt-4 inline-block text-primary text-sm">
           Voltar
         </Link>
       </div>
@@ -50,10 +50,14 @@ export default function SessaoDetailPage() {
       exercises: session.exercises.map((ex, i) => ({
         id: ex.id,
         name: ex.name,
-        sets: ex.sets.length,
+        sets: ex.isCardio ? 1 : ex.sets.length,
         reps: ex.plannedReps,
         restSeconds: ex.restSeconds,
         order: i,
+        isCardio: ex.isCardio,
+        durationMinutes: ex.isCardio
+          ? ex.actualDurationMinutes ?? ex.plannedDurationMinutes
+          : undefined,
       })),
     })
     setSavedAsTemplate(true)
@@ -62,7 +66,7 @@ export default function SessaoDetailPage() {
   return (
     <div className="space-y-6 pb-8">
       <div className="flex items-center gap-3 pt-2">
-        <Link href="/historico" className="text-muted-foreground hover:text-foreground">
+        <Link href="/treinos/historico" className="text-muted-foreground hover:text-foreground">
           <ChevronLeft className="h-5 w-5" />
         </Link>
         <div className="flex-1 min-w-0">
@@ -127,7 +131,11 @@ export default function SessaoDetailPage() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{ex.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {ex.sets.filter((s) => s.done).length}/{ex.sets.length} séries
+                  {ex.isCardio
+                    ? ex.completed
+                      ? `${ex.actualDurationMinutes} min de cardio`
+                      : 'Cardio não realizado'
+                    : `${ex.sets.filter((s) => s.done).length}/${ex.sets.length} séries`}
                 </p>
               </div>
               {expandedEx === ex.id ? (

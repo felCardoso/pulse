@@ -15,7 +15,7 @@ export default function SessionCard({ session }: Props) {
 
   return (
     <Link
-      href={`/historico/${session.id}`}
+      href={`/treinos/historico/${session.id}`}
       className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3.5 transition-colors hover:border-primary/40 active:bg-card/80"
     >
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15">

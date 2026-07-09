@@ -6,6 +6,9 @@ export interface ExerciseTemplate {
   restSeconds: number
   notes?: string
   order: number
+  /** Cardio exercises track time (minutes) instead of sets/reps */
+  isCardio?: boolean
+  durationMinutes?: number
 }
 
 export interface WorkoutTemplate {
@@ -36,6 +39,10 @@ export interface SessionExercise {
   sets: SetLog[]
   completed: boolean
   order: number
+  /** Cardio exercises track time (minutes) instead of sets/reps */
+  isCardio?: boolean
+  plannedDurationMinutes?: number
+  actualDurationMinutes?: number
 }
 
 export interface WorkoutSession {
@@ -65,6 +72,8 @@ export interface AppSettings {
   defaultRestSeconds: number
   hapticEnabled: boolean
   soundEnabled: boolean
+  /** Shows extra body-composition fields on the Progresso page */
+  bioimpedance: boolean
 }
 
 export interface MacroFood {
@@ -95,4 +104,24 @@ export interface MacroTargets {
   protein: number
   carbs: number
   fat: number
+}
+
+export interface BodyMeasurement {
+  id: string
+  /** YYYY-MM-DD */
+  date: string
+  weightKg: number
+  // Bioimpedance extras (only filled when the setting is enabled)
+  bodyFatPct?: number
+  musclePct?: number
+  waterPct?: number
+  visceralFat?: number
+}
+
+export interface ProgressPhoto {
+  id: string
+  /** YYYY-MM-DD */
+  date: string
+  /** Compressed JPEG data URL (kept small — localStorage is ~5MB) */
+  dataUrl: string
 }

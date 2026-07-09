@@ -1,64 +1,113 @@
 'use client'
 
-import { useEffect } from 'react'
-import { SkipForward } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { useEffect, useRef, useState } from 'react'
+import { SkipForward, Plus, Minus } from 'lucide-react'
+import { usePulseStore } from '@/store/pulse-store'
 import { useHaptic } from '@/hooks/useHaptic'
 import { useSound } from '@/hooks/useSound'
-import { useRestTimer } from '@/hooks/useRestTimer'
+import { requestNotificationPermission, notifyRestEnd } from '@/lib/notifications'
 import { formatRestTime } from '@/utils/format'
 
-const SIZE = 180
-const STROKE = 10
+const SIZE = 44
+const STROKE = 4
 const RADIUS = (SIZE - STROKE) / 2
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS
 
-interface Props {
-  seconds: number
-  isActive: boolean
-  onEnd: () => void
-  onSkip: () => void
-}
+// Global, non-blocking rest-timer pill. State lives in the store, so the
+// countdown survives navigating to any tab (and even an app reload).
+// Mounted once in the (app) layout.
+export default function RestTimer() {
+  const rest = usePulseStore((s) => s.rest)
+  const stopRest = usePulseStore((s) => s.stopRest)
+  const adjustRest = usePulseStore((s) => s.adjustRest)
+  const activeSession = usePulseStore((s) => s.activeSession)
 
-export default function RestTimer({ seconds, isActive, onEnd, onSkip }: Props) {
   const haptic = useHaptic()
   const sound = useSound()
+  const [now, setNow] = useState(() => Date.now())
+  const endedRef = useRef(false)
 
-  const handleEnd = () => {
-    haptic.restEnd()
-    sound.restEnd()
-    onEnd()
-  }
-
-  const { timeLeft, totalSeconds, start, skip } = useRestTimer(handleEnd)
+  const endsAt = rest?.endsAt
 
   useEffect(() => {
-    if (isActive && seconds > 0) {
-      start(seconds)
+    if (!endsAt) return
+
+    // Stale entry from a previous visit (e.g. app reopened long after the
+    // rest ended): clear silently, without end-of-rest feedback.
+    if (Date.now() > endsAt + 3000) {
+      stopRest()
+      return
     }
-  }, [isActive, seconds]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const progress = totalSeconds > 0 ? timeLeft / totalSeconds : 0
-  const strokeDashoffset = CIRCUMFERENCE * (1 - progress)
+    requestNotificationPermission()
+    endedRef.current = false
+    let raf: number
 
-  const handleSkip = () => {
-    skip()
-    onSkip()
-  }
+    const end = () => {
+      if (endedRef.current) return
+      endedRef.current = true
+      haptic.restEnd()
+      sound.restEnd()
+      notifyRestEnd()
+      stopRest()
+    }
 
-  if (!isActive) return null
+    const tick = () => {
+      setNow(Date.now())
+      if (Date.now() < endsAt) {
+        raf = requestAnimationFrame(tick)
+      } else {
+        end()
+      }
+    }
+
+    raf = requestAnimationFrame(tick)
+    // rAF pauses in background — this backup fires the end feedback (and
+    // the local notification) even with the tab hidden.
+    const timeout = setTimeout(end, Math.max(0, endsAt - Date.now()))
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        cancelAnimationFrame(raf)
+        raf = requestAnimationFrame(tick)
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible)
+
+    return () => {
+      cancelAnimationFrame(raf)
+      clearTimeout(timeout)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [endsAt]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!rest) return null
+
+  const timeLeft = Math.max(0, Math.ceil((rest.endsAt - now) / 1000))
+  const progress = rest.totalSeconds > 0 ? timeLeft / rest.totalSeconds : 0
+  const strokeDashoffset = CIRCUMFERENCE * (1 - Math.min(1, progress))
+
+  // "Supino reto · série 3/4" — what comes after the rest.
+  const currentExercise = activeSession?.exercises.find((e) => !e.completed)
+  const nextSet = currentExercise?.sets.find((s) => !s.done)
+  const nextLabel = currentExercise
+    ? nextSet
+      ? `${currentExercise.name} · série ${nextSet.setNumber}/${currentExercise.sets.length}`
+      : currentExercise.name
+    : undefined
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-t-3xl border-t border-border bg-background px-6 pb-safe pt-6 space-y-6">
-        <div className="mx-auto h-1 w-12 rounded-full bg-border" />
-
-        <p className="text-center text-sm font-medium text-muted-foreground">Descansando...</p>
-
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative">
+    <div
+      className="pointer-events-none fixed inset-x-0 z-50 flex justify-center px-4"
+      // Sits above the bottom nav (z-40, ~4rem tall) so the countdown is
+      // never covered by it on mobile.
+      style={{ bottom: 'calc(4.5rem + env(safe-area-inset-bottom, 0px))' }}
+    >
+      <div className="pointer-events-auto w-full max-w-lg rounded-2xl border border-primary/30 bg-background/95 shadow-lg shadow-black/40 backdrop-blur-md">
+        <div className="flex items-center gap-3 px-3 py-2.5">
+          {/* Mini progress ring with countdown */}
+          <div className="relative shrink-0">
             <svg width={SIZE} height={SIZE} className="-rotate-90">
-              {/* Track */}
               <circle
                 cx={SIZE / 2}
                 cy={SIZE / 2}
@@ -67,7 +116,6 @@ export default function RestTimer({ seconds, isActive, onEnd, onSkip }: Props) {
                 stroke="hsl(var(--border))"
                 strokeWidth={STROKE}
               />
-              {/* Progress */}
               <circle
                 cx={SIZE / 2}
                 cy={SIZE / 2}
@@ -81,23 +129,45 @@ export default function RestTimer({ seconds, isActive, onEnd, onSkip }: Props) {
                 style={{ transition: 'stroke-dashoffset 0.5s linear' }}
               />
             </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-4xl font-bold tabular-nums text-foreground">
-                {formatRestTime(timeLeft)}
-              </span>
-              <span className="text-xs text-muted-foreground">restante</span>
-            </div>
+            <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold tabular-nums text-foreground">
+              {formatRestTime(timeLeft)}
+            </span>
           </div>
-        </div>
 
-        <Button
-          variant="outline"
-          className="w-full gap-2"
-          onClick={handleSkip}
-        >
-          <SkipForward className="h-4 w-4" />
-          Pular Descanso
-        </Button>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-muted-foreground">Descansando</p>
+            {nextLabel && (
+              <p className="truncate text-xs text-foreground">
+                Próxima: <span className="font-medium">{nextLabel}</span>
+              </p>
+            )}
+          </div>
+
+          {/* −15s / +15s */}
+          <button
+            onClick={() => adjustRest(-15)}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground transition-colors hover:bg-secondary/70 active:scale-95"
+            aria-label="Diminuir 15 segundos"
+          >
+            <Minus className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => adjustRest(15)}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground transition-colors hover:bg-secondary/70 active:scale-95"
+            aria-label="Aumentar 15 segundos"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+
+          {/* Skip */}
+          <button
+            onClick={stopRest}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary transition-colors hover:bg-primary hover:text-primary-foreground active:scale-95"
+            aria-label="Pular descanso"
+          >
+            <SkipForward className="h-4 w-4" />
+          </button>
+        </div>
       </div>
     </div>
   )

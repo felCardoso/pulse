@@ -6,9 +6,9 @@ import { Flag, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import ActiveWorkoutHeader from '@/components/session/ActiveWorkoutHeader'
 import ExerciseTracker from '@/components/session/ExerciseTracker'
-import RestTimer from '@/components/session/RestTimer'
 import AddExerciseSheet from '@/components/session/AddExerciseSheet'
 import { useActiveWorkout } from '@/hooks/useActiveWorkout'
+import { useWakeLock } from '@/hooks/useWakeLock'
 import { usePulseStore } from '@/store/pulse-store'
 import type { SessionExercise } from '@/types'
 
@@ -16,9 +16,11 @@ export default function SessaoPage() {
   const router = useRouter()
   const { activeSession, exercises, currentExercise, doneCount, totalCount, isFinishable, cancelWorkout, finishWorkout, addExerciseToActiveSession } = useActiveWorkout()
   const weightUnit = usePulseStore((s) => s.settings.weightUnit)
+  const startRest = usePulseStore((s) => s.startRest)
 
-  const [restActive, setRestActive] = useState(false)
-  const [restSeconds, setRestSeconds] = useState(90)
+  // Keep the screen awake for the whole workout.
+  useWakeLock(!!activeSession)
+
   const [showAddExercise, setShowAddExercise] = useState(false)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
 
@@ -37,16 +39,13 @@ export default function SessaoPage() {
   }
 
   const handleSetDone = (seconds: number) => {
-    if (seconds > 0) {
-      setRestSeconds(seconds)
-      setRestActive(true)
-    }
+    if (seconds > 0) startRest(seconds)
   }
 
   const handleFinish = () => {
     const session = finishWorkout()
     if (session) {
-      router.push(`/historico/${session.id}`)
+      router.push(`/treinos/historico/${session.id}`)
     }
   }
 
@@ -76,7 +75,7 @@ export default function SessaoPage() {
           onCancel={handleCancel}
         />
 
-        <div className="flex-1 overflow-y-auto px-4 py-4 max-w-lg mx-auto w-full space-y-3">
+        <div className="flex-1 overflow-y-auto px-4 py-4 pb-40 max-w-lg mx-auto w-full space-y-3">
           {exercises.map((exercise) => (
             <ExerciseTracker
               key={exercise.id}
@@ -105,14 +104,6 @@ export default function SessaoPage() {
           )}
         </div>
       </div>
-
-      {/* Rest timer overlay */}
-      <RestTimer
-        seconds={restSeconds}
-        isActive={restActive}
-        onEnd={() => setRestActive(false)}
-        onSkip={() => setRestActive(false)}
-      />
 
       {/* Add exercise sheet */}
       {showAddExercise && (

@@ -19,6 +19,12 @@ export default function MealLog({ logs }: Props) {
     }))
   }
 
+  const timeOf = (timestamp: string) =>
+    new Date(timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+
+  // Chronological order, so backfilled meals land in the right spot.
+  const sortedLogs = [...logs].sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+
   if (logs.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
@@ -32,7 +38,7 @@ export default function MealLog({ logs }: Props) {
       <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
         Refeições do dia
       </h2>
-      {logs.map((log) => (
+      {sortedLogs.map((log) => (
         <div
           key={log.id}
           className="flex items-center justify-between rounded-lg border border-border bg-card p-3.5"
@@ -42,6 +48,8 @@ export default function MealLog({ logs }: Props) {
               {log.foodName}
             </p>
             <p className="text-xs text-muted-foreground">
+              <span className="font-medium text-foreground/70 tabular-nums">{timeOf(log.timestamp)}</span>
+              {' · '}
               {log.gramsConsumed}g · {log.kcal} kcal
             </p>
             <p className="text-xs text-muted-foreground mt-1">

@@ -32,10 +32,10 @@
       "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
     },
     {
-      "name": "Histórico",
-      "short_name": "Histórico",
-      "description": "Ver histórico de treinos",
-      "url": "/historico",
+      "name": "Progresso",
+      "short_name": "Progresso",
+      "description": "Acompanhar progresso corporal",
+      "url": "/progresso",
       "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
     }
   ]

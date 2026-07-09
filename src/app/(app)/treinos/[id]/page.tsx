@@ -93,7 +93,7 @@ export default function TemplateDetailPage() {
           {lastSessions.map((s) => (
             <Link
               key={s.id}
-              href={`/historico/${s.id}`}
+              href={`/treinos/historico/${s.id}`}
               className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 hover:border-primary/30 transition-colors"
             >
               <Dumbbell className="h-4 w-4 shrink-0 text-muted-foreground" />

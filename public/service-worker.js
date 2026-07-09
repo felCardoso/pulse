@@ -1,8 +1,9 @@
-const CACHE_NAME = 'pulse-v1'
+const CACHE_NAME = 'pulse-v2'
 const PRECACHE = [
   '/',
   '/treinos',
-  '/historico',
+  '/progresso',
+  '/macros',
   '/configuracoes',
   '/manifest.json',
   '/icons/icon-192.png',

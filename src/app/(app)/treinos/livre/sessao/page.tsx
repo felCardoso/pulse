@@ -6,9 +6,9 @@ import { Flag, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import ActiveWorkoutHeader from '@/components/session/ActiveWorkoutHeader'
 import ExerciseTracker from '@/components/session/ExerciseTracker'
-import RestTimer from '@/components/session/RestTimer'
 import AddExerciseSheet from '@/components/session/AddExerciseSheet'
 import { useActiveWorkout } from '@/hooks/useActiveWorkout'
+import { useWakeLock } from '@/hooks/useWakeLock'
 import { usePulseStore } from '@/store/pulse-store'
 import type { SessionExercise } from '@/types'
 
@@ -26,9 +26,11 @@ export default function LivreSessaoPage() {
     addExerciseToActiveSession,
   } = useActiveWorkout()
   const weightUnit = usePulseStore((s) => s.settings.weightUnit)
+  const startRest = usePulseStore((s) => s.startRest)
 
-  const [restActive, setRestActive] = useState(false)
-  const [restSeconds, setRestSeconds] = useState(90)
+  // Keep the screen awake for the whole workout.
+  useWakeLock(!!activeSession)
+
   const [showAddExercise, setShowAddExercise] = useState(true)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
 
@@ -44,15 +46,12 @@ export default function LivreSessaoPage() {
   }
 
   const handleSetDone = (seconds: number) => {
-    if (seconds > 0) {
-      setRestSeconds(seconds)
-      setRestActive(true)
-    }
+    if (seconds > 0) startRest(seconds)
   }
 
   const handleFinish = () => {
     const session = finishWorkout()
-    if (session) router.push(`/historico/${session.id}`)
+    if (session) router.push(`/treinos/historico/${session.id}`)
   }
 
   const handleCancel = () => {
@@ -75,7 +74,7 @@ export default function LivreSessaoPage() {
           progress={{ done: doneCount, total: totalCount }}
           onCancel={handleCancel}
         />
-        <div className="flex-1 overflow-y-auto px-4 py-4 max-w-lg mx-auto w-full space-y-3">
+        <div className="flex-1 overflow-y-auto px-4 py-4 pb-40 max-w-lg mx-auto w-full space-y-3">
           {exercises.map((exercise) => (
             <ExerciseTracker
               key={exercise.id}
@@ -100,7 +99,6 @@ export default function LivreSessaoPage() {
           )}
         </div>
       </div>
-      <RestTimer seconds={restSeconds} isActive={restActive} onEnd={() => setRestActive(false)} onSkip={() => setRestActive(false)} />
       {showAddExercise && (
         <AddExerciseSheet onAdd={handleAddExercise} onClose={() => setShowAddExercise(false)} />
       )}
