@@ -43,6 +43,9 @@ interface PulseStore {
   weightGoalKg: number | null
   progressPhotos: ProgressPhoto[]
 
+  // Weekly schedule: weekday (0=Sunday … 6=Saturday, as string) → templateId
+  weeklySchedule: Record<string, string>
+
   // Global rest timer — lives in the store so the countdown pill survives
   // navigation between tabs (and even an app reload, since it persists).
   rest: { endsAt: number; totalSeconds: number } | null
@@ -57,6 +60,8 @@ interface PulseStore {
   updateActiveSession: (data: Partial<WorkoutSession>) => void
   addExerciseToActiveSession: (exercise: Omit<SessionExercise, 'id' | 'order'>) => void
   completeSet: (exerciseId: string, setId: string, weight: number | undefined, reps: number | undefined) => void
+  completeCardioExercise: (exerciseId: string, minutes: number) => void
+  replaceExerciseInActiveSession: (exerciseId: string, newName: string) => void
   finishWorkout: (notes?: string) => WorkoutSession | null
   cancelWorkout: () => void
   updateSession: (id: string, data: Partial<WorkoutSession>) => void
@@ -79,6 +84,7 @@ interface PulseStore {
   setWeightGoal: (kg: number | null) => void
   addProgressPhoto: (dataUrl: string) => ProgressPhoto
   deleteProgressPhoto: (id: string) => void
+  setWeeklySchedule: (weekday: number, templateId: string | null) => void
 
   // Rest timer actions
   startRest: (seconds: number) => void
@@ -101,14 +107,19 @@ function buildSessionExercises(exercises: ExerciseTemplate[]): SessionExercise[]
     restSeconds: ex.restSeconds,
     completed: false,
     order: i,
-    sets: Array.from({ length: ex.sets }, (_, si) => ({
-      id: uuid(),
-      setNumber: si + 1,
-      weight: undefined,
-      reps: undefined,
-      done: false,
-      doneAt: undefined,
-    })),
+    isCardio: ex.isCardio,
+    plannedDurationMinutes: ex.isCardio ? ex.durationMinutes ?? 20 : undefined,
+    // Cardio tracks time, not sets.
+    sets: ex.isCardio
+      ? []
+      : Array.from({ length: ex.sets }, (_, si) => ({
+          id: uuid(),
+          setNumber: si + 1,
+          weight: undefined,
+          reps: undefined,
+          done: false,
+          doneAt: undefined,
+        })),
   }))
 }
 
@@ -139,6 +150,7 @@ export const usePulseStore = create<PulseStore>()(
       bodyMeasurements: [],
       weightGoalKg: null,
       progressPhotos: [],
+      weeklySchedule: {},
       rest: null,
 
       addTemplate: (data) => {
@@ -245,6 +257,36 @@ export const usePulseStore = create<PulseStore>()(
             : null,
           personalRecords: newRecords,
         }))
+      },
+
+      completeCardioExercise: (exerciseId, minutes) => {
+        const state = get()
+        if (!state.activeSession) return
+        set({
+          activeSession: {
+            ...state.activeSession,
+            exercises: state.activeSession.exercises.map((ex) =>
+              ex.id === exerciseId
+                ? { ...ex, actualDurationMinutes: minutes, completed: true }
+                : ex
+            ),
+          },
+        })
+      },
+
+      replaceExerciseInActiveSession: (exerciseId, newName) => {
+        const state = get()
+        if (!state.activeSession) return
+        set({
+          activeSession: {
+            ...state.activeSession,
+            exercises: state.activeSession.exercises.map((ex) =>
+              ex.id === exerciseId
+                ? { ...ex, name: newName.trim(), templateExerciseId: undefined }
+                : ex
+            ),
+          },
+        })
       },
 
       finishWorkout: (notes) => {
@@ -426,6 +468,18 @@ export const usePulseStore = create<PulseStore>()(
       },
 
       setWeightGoal: (kg) => set({ weightGoalKg: kg }),
+
+      setWeeklySchedule: (weekday, templateId) => {
+        set((s) => {
+          const schedule = { ...s.weeklySchedule }
+          if (templateId) {
+            schedule[String(weekday)] = templateId
+          } else {
+            delete schedule[String(weekday)]
+          }
+          return { weeklySchedule: schedule }
+        })
+      },
 
       addProgressPhoto: (dataUrl) => {
         const photo: ProgressPhoto = {

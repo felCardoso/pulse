@@ -17,6 +17,7 @@ export default function TreinosPage() {
   const startWorkout = usePulseStore((s) => s.startWorkout)
   const getSessionsThisWeek = usePulseStore((s) => s.getSessionsThisWeek)
   const personalRecords = usePulseStore((s) => s.personalRecords)
+  const weeklySchedule = usePulseStore((s) => s.weeklySchedule)
   const recordCount = Object.keys(personalRecords).length
 
   const completedSessions = sessions.filter((s) => s.status === 'completed')
@@ -35,9 +36,13 @@ export default function TreinosPage() {
     router.push('/treinos/livre/sessao')
   }
 
-  // Suggest the next workout in the cycle: the template after the one
-  // used in the most recent completed session (wrapping around).
+  // Today's scheduled workout takes priority; otherwise suggest the next
+  // template in the cycle (the one after the most recent completed session).
+  const scheduledTemplate =
+    templates.find((t) => t.id === weeklySchedule[String(new Date().getDay())]) ?? null
+
   const suggestedTemplate = (() => {
+    if (scheduledTemplate) return scheduledTemplate
     if (templates.length === 0) return null
     const lastTemplated = completedSessions.find((s) => s.templateId)
     if (!lastTemplated) return templates[0]
@@ -92,7 +97,9 @@ export default function TreinosPage() {
             <Play className="h-4 w-4 fill-primary text-primary" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs text-muted-foreground">Próximo treino sugerido</p>
+            <p className="text-xs text-muted-foreground">
+              {scheduledTemplate ? 'Treino de hoje (agenda)' : 'Próximo treino sugerido'}
+            </p>
             <p className="truncate text-sm font-semibold text-foreground">
               {suggestedTemplate.name}
             </p>

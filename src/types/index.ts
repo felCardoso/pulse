@@ -6,6 +6,9 @@ export interface ExerciseTemplate {
   restSeconds: number
   notes?: string
   order: number
+  /** Cardio exercises track time (minutes) instead of sets/reps */
+  isCardio?: boolean
+  durationMinutes?: number
 }
 
 export interface WorkoutTemplate {
@@ -36,6 +39,10 @@ export interface SessionExercise {
   sets: SetLog[]
   completed: boolean
   order: number
+  /** Cardio exercises track time (minutes) instead of sets/reps */
+  isCardio?: boolean
+  plannedDurationMinutes?: number
+  actualDurationMinutes?: number
 }
 
 export interface WorkoutSession {

@@ -7,15 +7,12 @@ import { formatDate } from '@/utils/format'
 
 export default function RecordesPage() {
   const personalRecords = usePulseStore((s) => s.personalRecords)
-  const sessions = usePulseStore((s) => s.sessions)
   const weightUnit = usePulseStore((s) => s.settings.weightUnit)
 
   // Most recent achievements first.
   const records = Object.values(personalRecords).sort((a, b) =>
     b.achievedAt.localeCompare(a.achievedAt)
   )
-
-  const sessionExists = (id: string) => sessions.some((s) => s.id === id)
 
   return (
     <div className="space-y-6">
@@ -40,38 +37,30 @@ export default function RecordesPage() {
         </div>
       ) : (
         <div className="space-y-2">
-          {records.map((pr) => {
-            const card = (
-              <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3.5 transition-colors hover:border-primary/40">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/15">
-                  <Trophy className="h-5 w-5 text-amber-500" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="truncate text-sm font-medium text-foreground">
-                    {pr.exerciseName}
-                  </p>
-                  <p className="text-xs text-muted-foreground tabular-nums">
-                    Carga máx: <span className="font-semibold text-foreground">{pr.maxWeight}{weightUnit}</span>
-                    {' · '}Volume máx: {Math.round(pr.maxVolume)}{weightUnit}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {formatDate(pr.achievedAt)}
-                  </p>
-                </div>
-                {sessionExists(pr.sessionId) && (
-                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                )}
+          {records.map((pr) => (
+            <Link
+              key={pr.exerciseName}
+              href={`/treinos/exercicio/${encodeURIComponent(pr.exerciseName)}`}
+              className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3.5 transition-colors hover:border-primary/40"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/15">
+                <Trophy className="h-5 w-5 text-amber-500" />
               </div>
-            )
-
-            return sessionExists(pr.sessionId) ? (
-              <Link key={pr.exerciseName} href={`/treinos/historico/${pr.sessionId}`}>
-                {card}
-              </Link>
-            ) : (
-              <div key={pr.exerciseName}>{card}</div>
-            )
-          })}
+              <div className="flex-1 min-w-0">
+                <p className="truncate text-sm font-medium text-foreground">
+                  {pr.exerciseName}
+                </p>
+                <p className="text-xs text-muted-foreground tabular-nums">
+                  Carga máx: <span className="font-semibold text-foreground">{pr.maxWeight}{weightUnit}</span>
+                  {' · '}Volume máx: {Math.round(pr.maxVolume)}{weightUnit}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {formatDate(pr.achievedAt)} · toque para ver a evolução
+                </p>
+              </div>
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+            </Link>
+          ))}
         </div>
       )}
     </div>

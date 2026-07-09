@@ -50,10 +50,14 @@ export default function SessaoDetailPage() {
       exercises: session.exercises.map((ex, i) => ({
         id: ex.id,
         name: ex.name,
-        sets: ex.sets.length,
+        sets: ex.isCardio ? 1 : ex.sets.length,
         reps: ex.plannedReps,
         restSeconds: ex.restSeconds,
         order: i,
+        isCardio: ex.isCardio,
+        durationMinutes: ex.isCardio
+          ? ex.actualDurationMinutes ?? ex.plannedDurationMinutes
+          : undefined,
       })),
     })
     setSavedAsTemplate(true)
@@ -127,7 +131,11 @@ export default function SessaoDetailPage() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{ex.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {ex.sets.filter((s) => s.done).length}/{ex.sets.length} séries
+                  {ex.isCardio
+                    ? ex.completed
+                      ? `${ex.actualDurationMinutes} min de cardio`
+                      : 'Cardio não realizado'
+                    : `${ex.sets.filter((s) => s.done).length}/${ex.sets.length} séries`}
                 </p>
               </div>
               {expandedEx === ex.id ? (

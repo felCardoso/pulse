@@ -28,6 +28,8 @@ export default function ConfiguracoesPage() {
   const bodyMeasurements = usePulseStore((s) => s.bodyMeasurements)
   const weightGoalKg = usePulseStore((s) => s.weightGoalKg)
   const progressPhotos = usePulseStore((s) => s.progressPhotos)
+  const weeklySchedule = usePulseStore((s) => s.weeklySchedule)
+  const setWeeklySchedule = usePulseStore((s) => s.setWeeklySchedule)
   const importRef = useRef<HTMLInputElement>(null)
   const [importError, setImportError] = useState<string | null>(null)
   const [importSuccess, setImportSuccess] = useState(false)
@@ -49,6 +51,7 @@ export default function ConfiguracoesPage() {
       bodyMeasurements,
       weightGoalKg,
       progressPhotos,
+      weeklySchedule,
     })
   }
 
@@ -72,6 +75,7 @@ export default function ConfiguracoesPage() {
           bodyMeasurements: data.bodyMeasurements ?? [],
           weightGoalKg: data.weightGoalKg ?? null,
           progressPhotos: data.progressPhotos ?? [],
+          weeklySchedule: data.weeklySchedule ?? {},
         })
         setImportSuccess(true)
       } catch {
@@ -94,6 +98,7 @@ export default function ConfiguracoesPage() {
       bodyMeasurements: [],
       weightGoalKg: null,
       progressPhotos: [],
+      weeklySchedule: {},
     })
   }
 
@@ -216,6 +221,37 @@ export default function ConfiguracoesPage() {
             </button>
           </div>
         </div>
+      </section>
+
+      {/* Weekly schedule */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Agenda de Treino
+        </h2>
+        <div className="rounded-xl border border-border bg-card divide-y divide-border">
+          {['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'].map(
+            (dayName, day) => (
+              <div key={day} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                <Label className="text-sm">{dayName}</Label>
+                <select
+                  value={weeklySchedule[String(day)] ?? ''}
+                  onChange={(e) => setWeeklySchedule(day, e.target.value || null)}
+                  className="max-w-[55%] rounded-lg border border-border bg-secondary px-2 py-1.5 text-xs text-foreground focus:border-primary focus:outline-none"
+                >
+                  <option value="">— Descanso</option>
+                  {templates.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          O treino do dia aparece como sugestão na aba Treinos.
+        </p>
       </section>
 
       {/* Body progress */}

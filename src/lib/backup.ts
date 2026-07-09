@@ -24,6 +24,7 @@ interface BackupData {
   bodyMeasurements?: BodyMeasurement[]
   weightGoalKg?: number | null
   progressPhotos?: ProgressPhoto[]
+  weeklySchedule?: Record<string, string>
 }
 
 export type BackupPayload = Omit<BackupData, 'version' | 'exportedAt'>
@@ -61,5 +62,6 @@ export function parseBackup(json: string): BackupPayload {
     bodyMeasurements: data.bodyMeasurements ?? [],
     weightGoalKg: data.weightGoalKg ?? null,
     progressPhotos: data.progressPhotos ?? [],
+    weeklySchedule: data.weeklySchedule ?? {},
   }
 }
