@@ -2,7 +2,7 @@
   "name": "Loop",
   "short_name": "Loop",
   "description": "Acompanhe seus treinos, rotinas e progresso.",
-  "start_url": "/treinos",
+  "start_url": "/inicio",
   "scope": "/",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],

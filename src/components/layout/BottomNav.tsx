@@ -2,17 +2,18 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Dumbbell, Play, TrendingUp, Settings, Repeat } from 'lucide-react'
+import { Dumbbell, Play, Home, TrendingUp, Repeat } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { usePulseStore } from '@/store/pulse-store'
 
-// Treinos gets the raised center circle — it's the app's primary action.
+// Treinos gets the raised center circle — it's the app's primary action:
+// start a saved workout. Creating/editing lives on the Treinos page itself.
 const leftTabs = [
-  { href: '/rotinas', label: 'Rotinas', icon: Repeat, match: '/rotinas' },
-  { href: '/progresso', label: 'Progresso', icon: TrendingUp, match: '/progresso' },
+  { href: '/inicio', label: 'Início', icon: Home, match: '/inicio' },
 ]
 const rightTabs = [
-  { href: '/configuracoes', label: 'Config', icon: Settings, match: '/configuracoes' },
+  { href: '/progresso', label: 'Progressão', icon: TrendingUp, match: '/progresso' },
+  { href: '/rotinas', label: 'Rotina', icon: Repeat, match: '/rotinas' },
 ]
 
 export default function BottomNav() {
@@ -20,9 +21,9 @@ export default function BottomNav() {
   const activeSession = usePulseStore((s) => s.activeSession)
   const treinoActive = pathname.startsWith('/treinos')
 
-  // No workout running: the button starts one (today's suggestion lives on
-  // /treinos). A workout in progress: it resumes that session directly, so
-  // it switches to a darker "play" look instead of competing with primary.
+  // No workout running: the button opens the saved-workouts list to start
+  // one. A workout in progress: it resumes that session directly, so it
+  // switches to a darker "play" look instead of competing with primary.
   const fabHref = activeSession
     ? activeSession.templateId
       ? `/treinos/${activeSession.templateId}/sessao`

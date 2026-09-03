@@ -1,7 +1,8 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { Download, Upload, Trash2, Palette, Dumbbell, TrendingUp, Database } from 'lucide-react'
+import Link from 'next/link'
+import { Download, Upload, Trash2, Palette, Dumbbell, TrendingUp, Database, ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
@@ -128,7 +129,12 @@ export default function ConfiguracoesPage() {
 
   return (
     <div className="space-y-6 pb-8">
-      <h1 className="text-2xl font-bold text-foreground pt-2">Configurações</h1>
+      <div className="flex items-center gap-2 pt-2">
+        <Link href="/inicio" className="text-muted-foreground hover:text-foreground">
+          <ChevronLeft className="h-5 w-5" />
+        </Link>
+        <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
+      </div>
 
       {/* Theme tabs */}
       <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-4 px-4">

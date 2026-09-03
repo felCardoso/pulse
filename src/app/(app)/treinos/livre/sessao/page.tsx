@@ -38,8 +38,8 @@ export default function LivreSessaoPage() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground">
         <p>Nenhum treino ativo.</p>
-        <button onClick={() => router.push('/treinos')} className="mt-4 text-primary text-sm">
-          Ir para Treinos
+        <button onClick={() => router.push('/inicio')} className="mt-4 text-primary text-sm">
+          Ir para o Início
         </button>
       </div>
     )
@@ -56,7 +56,7 @@ export default function LivreSessaoPage() {
 
   const handleCancel = () => {
     if (doneCount > 0) setShowCancelConfirm(true)
-    else { cancelWorkout(); router.push('/treinos') }
+    else { cancelWorkout(); router.push('/inicio') }
   }
 
   const handleAddExercise = (exercise: Omit<SessionExercise, 'id' | 'order'>) => {
@@ -109,7 +109,7 @@ export default function LivreSessaoPage() {
             <p className="text-sm text-muted-foreground">O progresso será perdido.</p>
             <div className="flex gap-3">
               <Button variant="outline" className="flex-1" onClick={() => setShowCancelConfirm(false)}>Continuar</Button>
-              <Button variant="destructive" className="flex-1" onClick={() => { cancelWorkout(); router.push('/treinos') }}>Cancelar</Button>
+              <Button variant="destructive" className="flex-1" onClick={() => { cancelWorkout(); router.push('/inicio') }}>Cancelar</Button>
             </div>
           </div>
         </div>

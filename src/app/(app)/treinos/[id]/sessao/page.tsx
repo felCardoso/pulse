@@ -29,10 +29,10 @@ export default function SessaoPage() {
       <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground">
         <p>Nenhum treino ativo.</p>
         <button
-          onClick={() => router.push('/treinos')}
+          onClick={() => router.push('/inicio')}
           className="mt-4 text-primary text-sm"
         >
-          Ir para Treinos
+          Ir para o Início
         </button>
       </div>
     )
@@ -54,7 +54,7 @@ export default function SessaoPage() {
       setShowCancelConfirm(true)
     } else {
       cancelWorkout()
-      router.push('/treinos')
+      router.push('/inicio')
     }
   }
 
@@ -134,7 +134,7 @@ export default function SessaoPage() {
                 className="flex-1"
                 onClick={() => {
                   cancelWorkout()
-                  router.push('/treinos')
+                  router.push('/inicio')
                 }}
               >
                 Cancelar treino
