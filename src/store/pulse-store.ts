@@ -16,14 +16,19 @@ import type {
   BodyMeasurement,
   ProgressPhoto,
   Habit,
+  HabitFrequency,
 } from '@/types'
 
-/** Rotina goal: 30 weekday check-ins (Sat/Sun don't count toward or against it). */
+/** Rotina goal: 30 valid check-ins (weekdays-only habits skip Sat/Sun; daily habits count every day). */
 export const ROUTINE_GOAL = 30
 
 export function isWeekday(dateStr: string): boolean {
   const day = new Date(`${dateStr}T00:00:00`).getDay()
   return day !== 0 && day !== 6
+}
+
+function countsForHabit(dateStr: string, frequency: HabitFrequency): boolean {
+  return frequency === 'daily' || isWeekday(dateStr)
 }
 
 function todayStr(): string {
@@ -107,7 +112,7 @@ interface PulseStore {
   completeOnboarding: () => void
 
   // Habit actions
-  addHabit: (name: string) => Habit
+  addHabit: (name: string, frequency?: HabitFrequency) => Habit
   deleteHabit: (id: string) => void
   toggleHabitToday: (id: string) => void
   getHabitProgress: (id: string) => {
@@ -531,11 +536,12 @@ export const usePulseStore = create<PulseStore>()(
         set((s) => ({ progressPhotos: s.progressPhotos.filter((p) => p.id !== id) }))
       },
 
-      addHabit: (name) => {
+      addHabit: (name, frequency = 'weekdays') => {
         const habit: Habit = {
           id: uuid(),
           name: name.trim(),
           createdAt: new Date().toISOString(),
+          frequency,
           completions: [],
         }
         set((s) => ({ habits: [...s.habits, habit] }))
@@ -548,7 +554,8 @@ export const usePulseStore = create<PulseStore>()(
 
       toggleHabitToday: (id) => {
         const today = todayStr()
-        if (!isWeekday(today)) return
+        const habit = get().habits.find((h) => h.id === id)
+        if (!habit || !countsForHabit(today, habit.frequency)) return
         set((s) => ({
           habits: s.habits.map((h) => {
             if (h.id !== id) return h
@@ -565,7 +572,9 @@ export const usePulseStore = create<PulseStore>()(
 
       getHabitProgress: (id) => {
         const habit = get().habits.find((h) => h.id === id)
-        const count = habit ? habit.completions.filter(isWeekday).length : 0
+        const count = habit
+          ? habit.completions.filter((d) => countsForHabit(d, habit.frequency)).length
+          : 0
         return {
           count,
           target: ROUTINE_GOAL,

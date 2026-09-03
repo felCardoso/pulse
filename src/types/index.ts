@@ -126,10 +126,14 @@ export interface ProgressPhoto {
   dataUrl: string
 }
 
+/** 'weekdays' counts only Mon-Fri toward the 30-day goal; 'daily' counts all 7 days. */
+export type HabitFrequency = 'weekdays' | 'daily'
+
 export interface Habit {
   id: string
   name: string
   createdAt: string
-  /** Dates (YYYY-MM-DD) checked off. Only weekdays count toward the 30-day goal. */
+  frequency: HabitFrequency
+  /** Dates (YYYY-MM-DD) checked off. */
   completions: string[]
 }

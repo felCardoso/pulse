@@ -19,7 +19,8 @@ export default function HabitCard({ habit }: Props) {
 
   const { count, target, percentage, isRoutine, checkedToday } = getHabitProgress(habit.id)
   const today = new Date().toISOString().split('T')[0]
-  const todayIsWeekday = isWeekday(today)
+  const isDaily = habit.frequency === 'daily'
+  const canCheckToday = isDaily || isWeekday(today)
 
   return (
     <>
@@ -44,7 +45,7 @@ export default function HabitCard({ habit }: Props) {
                     Virou rotina!
                   </span>
                 ) : (
-                  `${count} / ${target} dias úteis`
+                  `${count} / ${target} ${isDaily ? 'dias' : 'dias úteis'}`
                 )}
               </p>
             </div>
@@ -70,7 +71,7 @@ export default function HabitCard({ habit }: Props) {
 
           <button
             onClick={() => toggleHabitToday(habit.id)}
-            disabled={!todayIsWeekday}
+            disabled={!canCheckToday}
             className={`flex w-full items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
               checkedToday
                 ? 'bg-primary text-primary-foreground'
@@ -78,7 +79,7 @@ export default function HabitCard({ habit }: Props) {
             }`}
           >
             <Check className="h-4 w-4" />
-            {!todayIsWeekday
+            {!canCheckToday
               ? 'Fim de semana — sem meta hoje'
               : checkedToday
                 ? 'Feito hoje'

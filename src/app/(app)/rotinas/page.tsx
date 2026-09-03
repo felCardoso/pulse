@@ -16,7 +16,7 @@ export default function RotinasPage() {
       <div className="pt-2">
         <h1 className="text-2xl font-bold text-foreground">Rotinas</h1>
         <p className="text-xs text-muted-foreground mt-1">
-          30 dias úteis para virar hábito. Sábados e domingos não contam.
+          30 dias para virar hábito. Escolha dias úteis ou todos os dias por rotina.
         </p>
       </div>
 
