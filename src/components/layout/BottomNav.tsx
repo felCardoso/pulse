@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Dumbbell, Play, Home, TrendingUp, Repeat } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 import StartWorkoutSheet from '@/components/session/StartWorkoutSheet'
 
 // Treinos gets the raised center circle — it's the app's primary action:
@@ -20,7 +20,7 @@ const rightTabs = [
 
 export default function BottomNav() {
   const pathname = usePathname()
-  const activeSession = usePulseStore((s) => s.activeSession)
+  const activeSession = useEchoStore((s) => s.activeSession)
   const treinoActive = pathname.startsWith('/treinos')
   const [showStart, setShowStart] = useState(false)
 

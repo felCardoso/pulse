@@ -60,7 +60,7 @@ export async function notifyRestEnd(): Promise<void> {
     body: 'Hora da próxima série!',
     icon: '/icons/icon-192.png',
     badge: '/icons/icon-96.png',
-    tag: 'loop-rest-end',
+    tag: 'echo-rest-end',
   })
 }
 
@@ -70,14 +70,14 @@ export async function notifyRestEnd(): Promise<void> {
  */
 export async function notifyWorkoutReminder(workoutName: string): Promise<void> {
   if (!canNotify() || Notification.permission !== 'granted') return
-  if (alreadyFiredToday('loop-notified-workout')) return
-  markFiredToday('loop-notified-workout')
+  if (alreadyFiredToday('echo-notified-workout')) return
+  markFiredToday('echo-notified-workout')
 
   await showLocalNotification('Treino de hoje 💪', {
     body: `${workoutName} está te esperando.`,
     icon: '/icons/icon-192.png',
     badge: '/icons/icon-96.png',
-    tag: 'loop-workout-reminder',
+    tag: 'echo-workout-reminder',
   })
 }
 
@@ -88,8 +88,8 @@ export async function notifyWorkoutReminder(workoutName: string): Promise<void> 
 export async function notifyRoutineReminder(pendingCount: number): Promise<void> {
   if (!canNotify() || Notification.permission !== 'granted') return
   if (pendingCount <= 0) return
-  if (alreadyFiredToday('loop-notified-routine')) return
-  markFiredToday('loop-notified-routine')
+  if (alreadyFiredToday('echo-notified-routine')) return
+  markFiredToday('echo-notified-routine')
 
   await showLocalNotification(
     pendingCount === 1 ? '1 rotina pendente hoje' : `${pendingCount} rotinas pendentes hoje`,
@@ -97,7 +97,7 @@ export async function notifyRoutineReminder(pendingCount: number): Promise<void>
       body: 'Não quebre a sequência — marque suas rotinas de hoje.',
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-96.png',
-      tag: 'loop-routine-reminder',
+      tag: 'echo-routine-reminder',
     }
   )
 }

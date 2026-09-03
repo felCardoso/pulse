@@ -3,15 +3,15 @@
 import { useEffect, useState } from 'react'
 import { Plus, Repeat } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { usePulseStore, isWeekday } from '@/store/pulse-store'
+import { useEchoStore, isWeekday } from '@/store/echo-store'
 import HabitCard from '@/components/habits/HabitCard'
 import AddHabitDialog from '@/components/habits/AddHabitDialog'
 import { requestNotificationPermission, notifyRoutineReminder } from '@/lib/notifications'
 
 export default function RotinasPage() {
-  const habits = usePulseStore((s) => s.habits)
-  const getHabitProgress = usePulseStore((s) => s.getHabitProgress)
-  const routineReminders = usePulseStore((s) => s.settings.routineReminders)
+  const habits = useEchoStore((s) => s.habits)
+  const getHabitProgress = useEchoStore((s) => s.getHabitProgress)
+  const routineReminders = useEchoStore((s) => s.settings.routineReminders)
   const [showAdd, setShowAdd] = useState(false)
 
   // Best-effort routine reminder: fires at most once/day, only while the

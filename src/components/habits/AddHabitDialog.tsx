@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 import type { HabitFrequency } from '@/types'
 
 interface Props {
@@ -19,7 +19,7 @@ const FREQUENCY_OPTIONS: { value: HabitFrequency; label: string; description: st
 ]
 
 export default function AddHabitDialog({ onClose }: Props) {
-  const addHabit = usePulseStore((s) => s.addHabit)
+  const addHabit = useEchoStore((s) => s.addHabit)
   const [name, setName] = useState('')
   const [frequency, setFrequency] = useState<HabitFrequency>('weekdays')
 

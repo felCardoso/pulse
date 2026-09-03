@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AlertTriangle, Download, Trash2, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 
 interface Props {
   onCancel: () => void
@@ -21,11 +21,11 @@ export default function ClearDataDialog({ onCancel, onConfirm, onBackup }: Props
   const [typed, setTyped] = useState('')
   const [backedUp, setBackedUp] = useState(false)
 
-  const templates = usePulseStore((s) => s.templates.length)
-  const sessions = usePulseStore((s) => s.sessions.length)
-  const measurements = usePulseStore((s) => s.bodyMeasurements.length)
-  const photos = usePulseStore((s) => s.progressPhotos.length)
-  const habits = usePulseStore((s) => s.habits.length)
+  const templates = useEchoStore((s) => s.templates.length)
+  const sessions = useEchoStore((s) => s.sessions.length)
+  const measurements = useEchoStore((s) => s.bodyMeasurements.length)
+  const photos = useEchoStore((s) => s.progressPhotos.length)
+  const habits = useEchoStore((s) => s.habits.length)
 
   const dataSummary = [
     templates > 0 && `${templates} treino${templates !== 1 ? 's' : ''}`,

@@ -2,12 +2,12 @@
 
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight, Trophy } from 'lucide-react'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 import { formatDate } from '@/utils/format'
 
 export default function RecordesPage() {
-  const personalRecords = usePulseStore((s) => s.personalRecords)
-  const weightUnit = usePulseStore((s) => s.settings.weightUnit)
+  const personalRecords = useEchoStore((s) => s.personalRecords)
+  const weightUnit = useEchoStore((s) => s.settings.weightUnit)
 
   // Most recent achievements first.
   const records = Object.values(personalRecords).sort((a, b) =>

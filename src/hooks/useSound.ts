@@ -1,10 +1,10 @@
 'use client'
 
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 import { playRestEndSound, playSetDoneSound, playPRSound } from '@/lib/audio'
 
 export function useSound() {
-  const soundEnabled = usePulseStore((s) => s.settings.soundEnabled)
+  const soundEnabled = useEchoStore((s) => s.settings.soundEnabled)
 
   return {
     setDone: () => { if (soundEnabled) playSetDoneSound() },

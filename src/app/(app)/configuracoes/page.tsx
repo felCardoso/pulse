@@ -6,7 +6,7 @@ import { Download, Upload, Trash2, Palette, Dumbbell, TrendingUp, Database, Chev
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 import { exportBackup, parseBackup } from '@/lib/backup'
 import ClearDataDialog from '@/components/settings/ClearDataDialog'
 
@@ -28,16 +28,16 @@ const TABS: { key: Tab; label: string; icon: typeof Palette }[] = [
 ]
 
 export default function ConfiguracoesPage() {
-  const settings = usePulseStore((s) => s.settings)
-  const updateSettings = usePulseStore((s) => s.updateSettings)
-  const templates = usePulseStore((s) => s.templates)
-  const sessions = usePulseStore((s) => s.sessions)
-  const personalRecords = usePulseStore((s) => s.personalRecords)
-  const bodyMeasurements = usePulseStore((s) => s.bodyMeasurements)
-  const weightGoalKg = usePulseStore((s) => s.weightGoalKg)
-  const progressPhotos = usePulseStore((s) => s.progressPhotos)
-  const weeklySchedule = usePulseStore((s) => s.weeklySchedule)
-  const habits = usePulseStore((s) => s.habits)
+  const settings = useEchoStore((s) => s.settings)
+  const updateSettings = useEchoStore((s) => s.updateSettings)
+  const templates = useEchoStore((s) => s.templates)
+  const sessions = useEchoStore((s) => s.sessions)
+  const personalRecords = useEchoStore((s) => s.personalRecords)
+  const bodyMeasurements = useEchoStore((s) => s.bodyMeasurements)
+  const weightGoalKg = useEchoStore((s) => s.weightGoalKg)
+  const progressPhotos = useEchoStore((s) => s.progressPhotos)
+  const weeklySchedule = useEchoStore((s) => s.weeklySchedule)
+  const habits = useEchoStore((s) => s.habits)
   const importRef = useRef<HTMLInputElement>(null)
   const [importError, setImportError] = useState<string | null>(null)
   const [importSuccess, setImportSuccess] = useState(false)
@@ -72,7 +72,7 @@ export default function ConfiguracoesPage() {
     reader.onload = (ev) => {
       try {
         const data = parseBackup(ev.target?.result as string)
-        usePulseStore.setState({
+        useEchoStore.setState({
           templates: data.templates,
           sessions: data.sessions,
           personalRecords: data.personalRecords,
@@ -85,7 +85,7 @@ export default function ConfiguracoesPage() {
         })
         setImportSuccess(true)
       } catch {
-        setImportError('Arquivo inválido. Verifique se é um backup do Loop.')
+        setImportError('Arquivo inválido. Verifique se é um backup do Echo.')
       }
     }
     reader.readAsText(file)
@@ -93,7 +93,7 @@ export default function ConfiguracoesPage() {
   }
 
   const handleClearData = () => {
-    usePulseStore.setState({
+    useEchoStore.setState({
       templates: [],
       sessions: [],
       activeSession: null,
@@ -397,7 +397,7 @@ export default function ConfiguracoesPage() {
           </section>
 
           <p className="text-center text-xs text-muted-foreground">
-            <span className="font-heading">Loop</span> · {templates.length} treinos · {sessions.length} sessões
+            <span className="font-heading">Echo</span> · {templates.length} treinos · {sessions.length} sessões
           </p>
         </div>
       )}

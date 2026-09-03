@@ -5,15 +5,15 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, Trophy, Dumbbell, ChevronDown, ChevronUp, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 import { formatDuration, formatDate, calcTotalVolume } from '@/utils/format'
 
 export default function SessaoDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const sessions = usePulseStore((s) => s.sessions)
-  const updateSession = usePulseStore((s) => s.updateSession)
-  const personalRecords = usePulseStore((s) => s.personalRecords)
-  const addTemplate = usePulseStore((s) => s.addTemplate)
+  const sessions = useEchoStore((s) => s.sessions)
+  const updateSession = useEchoStore((s) => s.updateSession)
+  const personalRecords = useEchoStore((s) => s.personalRecords)
+  const addTemplate = useEchoStore((s) => s.addTemplate)
 
   const session = sessions.find((s) => s.id === id)
   const [expandedEx, setExpandedEx] = useState<string | null>(null)

@@ -1,6 +1,6 @@
 {
-  "name": "Loop",
-  "short_name": "Loop",
+  "name": "Echo",
+  "short_name": "Echo",
   "description": "Acompanhe seus treinos, rotinas e progresso.",
   "start_url": "/inicio",
   "scope": "/",

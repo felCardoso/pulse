@@ -3,11 +3,11 @@
 import Link from 'next/link'
 import { Flame, Clock, ChevronLeft } from 'lucide-react'
 import SessionCard from '@/components/history/SessionCard'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 import { formatRelativeDate, computeStreak } from '@/utils/format'
 
 export default function HistoricoPage() {
-  const allSessions = usePulseStore((s) => s.sessions)
+  const allSessions = useEchoStore((s) => s.sessions)
   const sessions = allSessions.filter((s) => s.status === 'completed')
   const streak = computeStreak(sessions)
 

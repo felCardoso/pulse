@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { Camera, Trash2, X } from 'lucide-react'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 import ConfirmDialog from '@/components/ui/confirm-dialog'
 import { compressImage, estimateBytes, formatBytes } from '@/lib/image'
 import type { ProgressPhoto } from '@/types'
@@ -17,9 +17,9 @@ function formatDateBR(date: string): string {
 }
 
 export default function ProgressPhotos() {
-  const progressPhotos = usePulseStore((s) => s.progressPhotos)
-  const addProgressPhoto = usePulseStore((s) => s.addProgressPhoto)
-  const deleteProgressPhoto = usePulseStore((s) => s.deleteProgressPhoto)
+  const progressPhotos = useEchoStore((s) => s.progressPhotos)
+  const addProgressPhoto = useEchoStore((s) => s.addProgressPhoto)
+  const deleteProgressPhoto = useEchoStore((s) => s.deleteProgressPhoto)
 
   const inputRef = useRef<HTMLInputElement>(null)
   const [viewing, setViewing] = useState<ProgressPhoto | null>(null)

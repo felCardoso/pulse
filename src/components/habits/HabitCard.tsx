@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Check, Trash2, PartyPopper } from 'lucide-react'
-import { usePulseStore, isWeekday } from '@/store/pulse-store'
+import { useEchoStore, isWeekday } from '@/store/echo-store'
 import ContextMenu from '@/components/ui/context-menu'
 import ConfirmDialog from '@/components/ui/confirm-dialog'
 import type { Habit } from '@/types'
@@ -12,9 +12,9 @@ interface Props {
 }
 
 export default function HabitCard({ habit }: Props) {
-  const toggleHabitToday = usePulseStore((s) => s.toggleHabitToday)
-  const deleteHabit = usePulseStore((s) => s.deleteHabit)
-  const getHabitProgress = usePulseStore((s) => s.getHabitProgress)
+  const toggleHabitToday = useEchoStore((s) => s.toggleHabitToday)
+  const deleteHabit = useEchoStore((s) => s.deleteHabit)
+  const getHabitProgress = useEchoStore((s) => s.getHabitProgress)
   const [confirmOpen, setConfirmOpen] = useState(false)
 
   const { count, target, percentage, isRoutine, checkedToday } = getHabitProgress(habit.id)

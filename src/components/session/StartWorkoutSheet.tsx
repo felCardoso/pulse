@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { X, Play, Zap, Dumbbell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 import { getTodaySuggestion } from '@/utils/schedule'
 
 interface Props {
@@ -15,10 +15,10 @@ interface Props {
 // pick a different saved template / a free workout instead.
 export default function StartWorkoutSheet({ onClose }: Props) {
   const router = useRouter()
-  const templates = usePulseStore((s) => s.templates)
-  const sessions = usePulseStore((s) => s.sessions)
-  const weeklySchedule = usePulseStore((s) => s.weeklySchedule)
-  const startWorkout = usePulseStore((s) => s.startWorkout)
+  const templates = useEchoStore((s) => s.templates)
+  const sessions = useEchoStore((s) => s.sessions)
+  const weeklySchedule = useEchoStore((s) => s.weeklySchedule)
+  const startWorkout = useEchoStore((s) => s.startWorkout)
 
   const { scheduled, suggested } = getTodaySuggestion(templates, sessions, weeklySchedule)
   const otherTemplates = templates.filter((t) => t.id !== suggested?.id)

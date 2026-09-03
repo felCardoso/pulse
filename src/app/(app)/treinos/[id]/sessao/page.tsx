@@ -9,14 +9,14 @@ import ExerciseTracker from '@/components/session/ExerciseTracker'
 import AddExerciseSheet from '@/components/session/AddExerciseSheet'
 import { useActiveWorkout } from '@/hooks/useActiveWorkout'
 import { useWakeLock } from '@/hooks/useWakeLock'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 import type { SessionExercise } from '@/types'
 
 export default function SessaoPage() {
   const router = useRouter()
   const { activeSession, exercises, currentExercise, doneCount, totalCount, isFinishable, cancelWorkout, finishWorkout, addExerciseToActiveSession } = useActiveWorkout()
-  const weightUnit = usePulseStore((s) => s.settings.weightUnit)
-  const startRest = usePulseStore((s) => s.startRest)
+  const weightUnit = useEchoStore((s) => s.settings.weightUnit)
+  const startRest = useEchoStore((s) => s.startRest)
 
   // Keep the screen awake for the whole workout.
   useWakeLock(!!activeSession)

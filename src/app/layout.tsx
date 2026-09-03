@@ -18,7 +18,7 @@ const spaceGrotesk = Space_Grotesk({
 })
 
 export const metadata: Metadata = {
-  title: 'Loop',
+  title: 'Echo',
   description: 'Acompanhe seus treinos, rotinas e progresso.',
   manifest: '/manifest.json',
   icons: {
@@ -34,13 +34,13 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Loop',
+    title: 'Echo',
     startupImage: '/icons/icon-512.png',
   },
   other: {
     'mobile-web-app-capable': 'yes',
     'apple-mobile-web-app-capable': 'yes',
-    'application-name': 'Loop',
+    'application-name': 'Echo',
     'msapplication-TileColor': '#0f0f0f',
     'msapplication-TileImage': '/icons/icon-144.png',
   },
@@ -61,7 +61,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Apply saved primary hue before first paint to avoid flash */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var s=JSON.parse(localStorage.getItem('pulse-store')||'{}');var h=s.state?.settings?.primaryHue;if(h!=null)document.documentElement.style.setProperty('--primary-hue',h);}catch(e){}`,
+            __html: `try{var s=JSON.parse(localStorage.getItem('echo-store')||'{}');var h=s.state?.settings?.primaryHue;if(h!=null)document.documentElement.style.setProperty('--primary-hue',h);}catch(e){}`,
           }}
         />
       </head>

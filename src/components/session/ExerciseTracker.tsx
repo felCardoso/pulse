@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import SetRow from './SetRow'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 import { useHaptic } from '@/hooks/useHaptic'
 import { useSound } from '@/hooks/useSound'
 import { unlockAudio } from '@/lib/audio'
@@ -42,13 +42,13 @@ export default function ExerciseTracker({
     if (exercise.completed) setExpanded(false)
   }, [exercise.completed])
 
-  const completeSet = usePulseStore((s) => s.completeSet)
-  const completeTimeExercise = usePulseStore((s) => s.completeTimeExercise)
-  const addWarmupSet = usePulseStore((s) => s.addWarmupSet)
-  const replaceExerciseInActiveSession = usePulseStore((s) => s.replaceExerciseInActiveSession)
-  const getLastSessionForExercise = usePulseStore((s) => s.getLastSessionForExercise)
-  const getExerciseLibrary = usePulseStore((s) => s.getExerciseLibrary)
-  const sessions = usePulseStore((s) => s.sessions)
+  const completeSet = useEchoStore((s) => s.completeSet)
+  const completeTimeExercise = useEchoStore((s) => s.completeTimeExercise)
+  const addWarmupSet = useEchoStore((s) => s.addWarmupSet)
+  const replaceExerciseInActiveSession = useEchoStore((s) => s.replaceExerciseInActiveSession)
+  const getLastSessionForExercise = useEchoStore((s) => s.getLastSessionForExercise)
+  const getExerciseLibrary = useEchoStore((s) => s.getExerciseLibrary)
+  const sessions = useEchoStore((s) => s.sessions)
   const haptic = useHaptic()
   const sound = useSound()
 

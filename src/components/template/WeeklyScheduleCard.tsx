@@ -3,16 +3,16 @@
 import { useState } from 'react'
 import { X, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 
 const DAY_NAMES = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado']
 
 // Weekly training schedule: one stacked card per day of the week, tap to
 // open a modal and assign a saved workout (or rest) to that day.
 export default function WeeklyScheduleCard() {
-  const templates = usePulseStore((s) => s.templates)
-  const weeklySchedule = usePulseStore((s) => s.weeklySchedule)
-  const setWeeklySchedule = usePulseStore((s) => s.setWeeklySchedule)
+  const templates = useEchoStore((s) => s.templates)
+  const weeklySchedule = useEchoStore((s) => s.weeklySchedule)
+  const setWeeklySchedule = useEchoStore((s) => s.setWeeklySchedule)
   const [editingDay, setEditingDay] = useState<number | null>(null)
 
   const today = new Date().getDay()

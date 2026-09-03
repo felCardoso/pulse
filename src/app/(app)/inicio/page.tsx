@@ -8,21 +8,21 @@ import { Button } from '@/components/ui/button'
 import SessionCard from '@/components/history/SessionCard'
 import TrainingHeatmap from '@/components/history/TrainingHeatmap'
 import WeightChart from '@/components/progress/WeightChart'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 import { calcTotalVolume, computeStreak, formatDuration } from '@/utils/format'
 import { getTodaySuggestion } from '@/utils/schedule'
 import { requestNotificationPermission, notifyWorkoutReminder } from '@/lib/notifications'
 
 export default function InicioPage() {
   const router = useRouter()
-  const templates = usePulseStore((s) => s.templates)
-  const sessions = usePulseStore((s) => s.sessions)
-  const activeSession = usePulseStore((s) => s.activeSession)
-  const startWorkout = usePulseStore((s) => s.startWorkout)
-  const getSessionsThisWeek = usePulseStore((s) => s.getSessionsThisWeek)
-  const personalRecords = usePulseStore((s) => s.personalRecords)
-  const weeklySchedule = usePulseStore((s) => s.weeklySchedule)
-  const workoutReminders = usePulseStore((s) => s.settings.workoutReminders)
+  const templates = useEchoStore((s) => s.templates)
+  const sessions = useEchoStore((s) => s.sessions)
+  const activeSession = useEchoStore((s) => s.activeSession)
+  const startWorkout = useEchoStore((s) => s.startWorkout)
+  const getSessionsThisWeek = useEchoStore((s) => s.getSessionsThisWeek)
+  const personalRecords = useEchoStore((s) => s.personalRecords)
+  const weeklySchedule = useEchoStore((s) => s.weeklySchedule)
+  const workoutReminders = useEchoStore((s) => s.settings.workoutReminders)
   const recordCount = Object.keys(personalRecords).length
 
   const completedSessions = sessions.filter((s) => s.status === 'completed')

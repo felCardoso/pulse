@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Dumbbell, ChevronRight, Trash2, Pencil } from 'lucide-react'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 import { formatRelativeDate } from '@/utils/format'
 import ContextMenu from '@/components/ui/context-menu'
 import ConfirmDialog from '@/components/ui/confirm-dialog'
@@ -17,7 +17,7 @@ interface Props {
 
 export default function TemplateCard({ template, lastSessionDate }: Props) {
   const router = useRouter()
-  const deleteTemplate = usePulseStore((s) => s.deleteTemplate)
+  const deleteTemplate = useEchoStore((s) => s.deleteTemplate)
   const [confirmOpen, setConfirmOpen] = useState(false)
 
   return (

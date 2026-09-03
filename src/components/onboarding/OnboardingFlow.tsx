@@ -5,18 +5,18 @@ import { useRouter } from 'next/navigation'
 import { Disc, Dumbbell, Repeat, TrendingUp, WifiOff, ChevronLeft, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 
 export default function OnboardingFlow() {
   const router = useRouter()
 
-  const onboardingCompleted = usePulseStore((s) => s.onboardingCompleted)
-  const completeOnboarding = usePulseStore((s) => s.completeOnboarding)
-  const addBodyMeasurement = usePulseStore((s) => s.addBodyMeasurement)
-  const setWeightGoal = usePulseStore((s) => s.setWeightGoal)
+  const onboardingCompleted = useEchoStore((s) => s.onboardingCompleted)
+  const completeOnboarding = useEchoStore((s) => s.completeOnboarding)
+  const addBodyMeasurement = useEchoStore((s) => s.addBodyMeasurement)
+  const setWeightGoal = useEchoStore((s) => s.setWeightGoal)
 
   // Anything already in the store means this isn't a first launch.
-  const hasData = usePulseStore(
+  const hasData = useEchoStore(
     (s) =>
       s.templates.length > 0 ||
       s.sessions.length > 0 ||
@@ -29,11 +29,11 @@ export default function OnboardingFlow() {
   // an effect (this is what broke the Vercel build when accessed in render).
   const [hydrated, setHydrated] = useState(false)
   useEffect(() => {
-    if (usePulseStore.persist?.hasHydrated()) {
+    if (useEchoStore.persist?.hasHydrated()) {
       setHydrated(true)
       return
     }
-    return usePulseStore.persist?.onFinishHydration(() => setHydrated(true))
+    return useEchoStore.persist?.onFinishHydration(() => setHydrated(true))
   }, [])
 
   // Existing users (data present but flag missing) skip silently.
@@ -110,7 +110,7 @@ export default function OnboardingFlow() {
                 <Disc className="h-10 w-10 text-primary" />
               </div>
               <div>
-                <h1 className="font-heading text-2xl font-bold text-foreground">Bem-vindo ao Loop</h1>
+                <h1 className="font-heading text-2xl font-bold text-foreground">Bem-vindo ao Echo</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Treino, rotinas e progresso corporal em um só lugar
                 </p>

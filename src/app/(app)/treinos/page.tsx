@@ -5,11 +5,11 @@ import { Plus, Dumbbell, CalendarDays } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import TemplateCard from '@/components/template/TemplateCard'
 import WeeklyScheduleCard from '@/components/template/WeeklyScheduleCard'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 
 export default function TreinosPage() {
-  const templates = usePulseStore((s) => s.templates)
-  const sessions = usePulseStore((s) => s.sessions)
+  const templates = useEchoStore((s) => s.templates)
+  const sessions = useEchoStore((s) => s.sessions)
 
   const getLastSession = (templateId: string) =>
     sessions.find((s) => s.templateId === templateId && s.status === 'completed')

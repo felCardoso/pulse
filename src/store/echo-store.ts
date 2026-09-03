@@ -57,7 +57,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   routineReminders: true,
 }
 
-interface PulseStore {
+interface EchoStore {
   templates: WorkoutTemplate[]
   sessions: WorkoutSession[]
   activeSession: WorkoutSession | null
@@ -204,7 +204,7 @@ function startOfWeek(date: Date): Date {
   return d
 }
 
-export const usePulseStore = create<PulseStore>()(
+export const useEchoStore = create<EchoStore>()(
   persist(
     (set, get) => ({
       templates: [],
@@ -626,7 +626,7 @@ export const usePulseStore = create<PulseStore>()(
       },
     }),
     {
-      name: 'pulse-store',
+      name: 'echo-store',
       skipHydration: true,
     }
   )

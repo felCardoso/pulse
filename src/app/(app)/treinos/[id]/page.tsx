@@ -4,16 +4,16 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, Play, Pencil, Dumbbell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 import { formatRelativeDate } from '@/utils/format'
 
 export default function TemplateDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
-  const templates = usePulseStore((s) => s.templates)
-  const sessions = usePulseStore((s) => s.sessions)
-  const startWorkout = usePulseStore((s) => s.startWorkout)
-  const activeSession = usePulseStore((s) => s.activeSession)
+  const templates = useEchoStore((s) => s.templates)
+  const sessions = useEchoStore((s) => s.sessions)
+  const startWorkout = useEchoStore((s) => s.startWorkout)
+  const activeSession = useEchoStore((s) => s.activeSession)
 
   const template = templates.find((t) => t.id === id)
 

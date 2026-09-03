@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 import type { SessionExercise } from '@/types'
 
 const DEFAULT_WARMUP_PERCENT = 60
@@ -18,7 +18,7 @@ interface Props {
 }
 
 export default function AddExerciseSheet({ onAdd, onClose }: Props) {
-  const getExerciseLibrary = usePulseStore((s) => s.getExerciseLibrary)
+  const getExerciseLibrary = useEchoStore((s) => s.getExerciseLibrary)
   const [name, setName] = useState('')
   const [trackBy, setTrackBy] = useState<'reps' | 'time'>('reps')
   const [sets, setSets] = useState('3')

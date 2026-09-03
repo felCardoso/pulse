@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import ExerciseBlockEditor from './ExerciseBlockEditor'
 import CSVImport from './CSVImport'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 import type { ExerciseTemplate, WorkoutTemplate } from '@/types'
 
 type ExerciseDraft = Omit<ExerciseTemplate, 'id'> & { _key: string }
@@ -32,9 +32,9 @@ interface Props {
 
 export default function TemplateForm({ existing }: Props) {
   const router = useRouter()
-  const addTemplate = usePulseStore((s) => s.addTemplate)
-  const updateTemplate = usePulseStore((s) => s.updateTemplate)
-  const getExerciseLibrary = usePulseStore((s) => s.getExerciseLibrary)
+  const addTemplate = useEchoStore((s) => s.addTemplate)
+  const updateTemplate = useEchoStore((s) => s.updateTemplate)
+  const getExerciseLibrary = useEchoStore((s) => s.getExerciseLibrary)
 
   const [name, setName] = useState(existing?.name ?? '')
   const [description, setDescription] = useState(existing?.description ?? '')

@@ -1,9 +1,9 @@
 'use client'
 
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 
 export function useHaptic() {
-  const hapticEnabled = usePulseStore((s) => s.settings.hapticEnabled)
+  const hapticEnabled = useEchoStore((s) => s.settings.hapticEnabled)
 
   const vibrate = (pattern: number | number[]) => {
     if (hapticEnabled && typeof navigator !== 'undefined' && navigator.vibrate) {

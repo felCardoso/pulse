@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { SkipForward, Plus, Minus } from 'lucide-react'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 import { useHaptic } from '@/hooks/useHaptic'
 import { useSound } from '@/hooks/useSound'
 import { requestNotificationPermission, notifyRestEnd } from '@/lib/notifications'
@@ -17,13 +17,13 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS
 // takeover). State lives in the store, so the countdown survives navigating
 // to any tab (and even an app reload). Mounted once in the (app) layout.
 export default function RestTimer() {
-  const rest = usePulseStore((s) => s.rest)
-  const stopRest = usePulseStore((s) => s.stopRest)
-  const adjustRest = usePulseStore((s) => s.adjustRest)
-  const pauseRest = usePulseStore((s) => s.pauseRest)
-  const resumeRest = usePulseStore((s) => s.resumeRest)
-  const activeSession = usePulseStore((s) => s.activeSession)
-  const focusModeEnabled = usePulseStore((s) => s.settings.focusModeEnabled)
+  const rest = useEchoStore((s) => s.rest)
+  const stopRest = useEchoStore((s) => s.stopRest)
+  const adjustRest = useEchoStore((s) => s.adjustRest)
+  const pauseRest = useEchoStore((s) => s.pauseRest)
+  const resumeRest = useEchoStore((s) => s.resumeRest)
+  const activeSession = useEchoStore((s) => s.activeSession)
+  const focusModeEnabled = useEchoStore((s) => s.settings.focusModeEnabled)
 
   const haptic = useHaptic()
   const sound = useSound()

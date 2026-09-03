@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Dumbbell, Trophy } from 'lucide-react'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 import WeightChart from '@/components/progress/WeightChart'
 import { formatRelativeDate } from '@/utils/format'
 
@@ -12,9 +12,9 @@ export default function ExercicioEvolucaoPage() {
   const exerciseName = decodeURIComponent(params.name)
   const norm = exerciseName.trim().toLowerCase()
 
-  const sessions = usePulseStore((s) => s.sessions)
-  const personalRecords = usePulseStore((s) => s.personalRecords)
-  const weightUnit = usePulseStore((s) => s.settings.weightUnit)
+  const sessions = useEchoStore((s) => s.sessions)
+  const personalRecords = useEchoStore((s) => s.personalRecords)
+  const weightUnit = useEchoStore((s) => s.settings.weightUnit)
 
   const pr = personalRecords[norm]
 
