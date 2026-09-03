@@ -59,14 +59,18 @@ export function formatElapsed(startedAt: string): string {
 }
 
 export function calcTotalVolume(
-  exercises: { sets: { weight?: number; reps?: number; done: boolean; isWarmup?: boolean }[] }[]
+  exercises: {
+    unilateral?: boolean
+    sets: { weight?: number; reps?: number; done: boolean; isWarmup?: boolean }[]
+  }[]
 ): number {
   return exercises.reduce((total, ex) => {
+    const multiplier = ex.unilateral ? 2 : 1
     return (
       total +
       ex.sets.reduce((setTotal, s) => {
         if (!s.done || s.weight == null || s.reps == null || s.isWarmup) return setTotal
-        return setTotal + s.weight * s.reps
+        return setTotal + s.weight * s.reps * multiplier
       }, 0)
     )
   }, 0)

@@ -28,9 +28,10 @@ export default function ExercicioEvolucaoPage() {
       if (!ex) return null
       const doneSets = ex.sets.filter((s) => s.done && s.weight != null && !s.isWarmup)
       if (doneSets.length === 0) return null
+      const multiplier = ex.unilateral ? 2 : 1
       const maxWeight = Math.max(...doneSets.map((s) => s.weight as number))
       const volume = doneSets.reduce(
-        (acc, s) => acc + (s.weight as number) * (s.reps ?? 0),
+        (acc, s) => acc + (s.weight as number) * (s.reps ?? 0) * multiplier,
         0
       )
       return {

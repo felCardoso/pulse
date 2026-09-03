@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, Minus, Plus, Flame } from 'lucide-react'
+import { Check, Minus, Plus, Flame, Pencil, Trash2, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { useLongPress } from '@/hooks/useLongPress'
 import type { SetLog } from '@/types'
 
 const WEIGHT_STEP = 2.5
@@ -18,6 +19,10 @@ interface Props {
   /** No weight is logged for this exercise — only reps. */
   bodyweight?: boolean
   onComplete: (weight: number | undefined, reps: number | undefined, rir: number | undefined) => void
+  /** Patches an already-completed set instead of completing a new one. */
+  onUpdate?: (weight: number | undefined, reps: number | undefined, rir: number | undefined) => void
+  /** Only offered for warm-up sets — removes it from the exercise entirely. */
+  onDelete?: () => void
 }
 
 export default function SetRow({
@@ -27,11 +32,23 @@ export default function SetRow({
   previousReps,
   bodyweight,
   onComplete,
+  onUpdate,
+  onDelete,
 }: Props) {
   const [weight, setWeight] = useState(set.weight != null ? String(set.weight) : '')
   const [reps, setReps] = useState(set.reps != null ? String(set.reps) : '')
   const [rir, setRir] = useState<number | undefined>(set.rir)
   const [shake, setShake] = useState(false)
+  // Press-and-hold on an already-done set re-opens it for editing.
+  const [editing, setEditing] = useState(false)
+
+  const longPress = useLongPress(() => {
+    if (!set.done) return
+    setWeight(set.weight != null ? String(set.weight) : '')
+    setReps(set.reps != null ? String(set.reps) : '')
+    setRir(set.rir)
+    setEditing(true)
+  })
 
   // One-tap logging: an empty field falls back to the placeholder value
   // (previous set in this session, or last session), so a stable workout
@@ -45,11 +62,20 @@ export default function SetRow({
       setTimeout(() => setShake(false), 600)
       return
     }
-    onComplete(
-      effectiveWeight != null && !isNaN(effectiveWeight) ? effectiveWeight : undefined,
-      effectiveReps,
-      rir
-    )
+    const finalWeight = effectiveWeight != null && !isNaN(effectiveWeight) ? effectiveWeight : undefined
+    if (editing) {
+      onUpdate?.(finalWeight, effectiveReps, rir)
+      setEditing(false)
+    } else {
+      onComplete(finalWeight, effectiveReps, rir)
+    }
+  }
+
+  const cancelEdit = () => {
+    setWeight(set.weight != null ? String(set.weight) : '')
+    setReps(set.reps != null ? String(set.reps) : '')
+    setRir(set.rir)
+    setEditing(false)
   }
 
   const stepWeight = (delta: number) => {
@@ -69,9 +95,13 @@ export default function SetRow({
     </span>
   )
 
-  if (set.done) {
+  if (set.done && !editing) {
     return (
-      <div className="flex items-center gap-3 rounded-lg bg-primary/8 px-3 py-2">
+      <div
+        {...longPress}
+        className="flex select-none items-center gap-3 rounded-lg bg-primary/8 px-3 py-2 active:bg-primary/15"
+        style={{ touchAction: 'manipulation' }}
+      >
         {label}
         <span className="font-heading flex-1 text-sm text-muted-foreground line-through">
           {bodyweight
@@ -85,7 +115,20 @@ export default function SetRow({
             RIR {set.rir}
           </span>
         )}
-        <Check className="h-4 w-4 text-primary" />
+        {set.isWarmup && onDelete && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete()
+            }}
+            className="shrink-0 text-muted-foreground hover:text-destructive"
+            aria-label="Excluir série de aquecimento"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        )}
+        <Pencil className="h-3 w-3 shrink-0 text-muted-foreground/50" />
+        <Check className="h-4 w-4 shrink-0 text-primary" />
       </div>
     )
   }
@@ -136,6 +179,26 @@ export default function SetRow({
           onChange={(e) => setReps(e.target.value)}
           className={cn('h-9 shrink-0 text-center', bodyweight ? 'flex-1' : 'w-14')}
         />
+
+        {set.isWarmup && onDelete && !editing && (
+          <button
+            onClick={onDelete}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-destructive active:scale-95"
+            aria-label="Excluir série de aquecimento"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        )}
+
+        {editing && (
+          <button
+            onClick={cancelEdit}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground transition-colors hover:text-foreground active:scale-95"
+            aria-label="Cancelar edição"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
 
         <button
           onClick={handleDone}

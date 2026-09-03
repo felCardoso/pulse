@@ -1,8 +1,10 @@
 'use client'
 
 import Link from 'next/link'
+import { Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useEchoStore } from '@/store/echo-store'
+import { getLocalDateStr } from '@/utils/format'
 
 const DAY_LETTERS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
 
@@ -12,7 +14,12 @@ const DAY_LETTERS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
 export default function MiniWeekAgenda() {
   const templates = useEchoStore((s) => s.templates)
   const weeklySchedule = useEchoStore((s) => s.weeklySchedule)
+  const sessions = useEchoStore((s) => s.sessions)
   const today = new Date().getDay()
+
+  const trainedToday = sessions.some(
+    (s) => s.status === 'completed' && getLocalDateStr(new Date(s.startedAt)) === getLocalDateStr()
+  )
 
   return (
     <Link
@@ -27,16 +34,21 @@ export default function MiniWeekAgenda() {
         {DAY_LETTERS.map((letter, day) => {
           const hasWorkout = templates.some((t) => t.id === weeklySchedule[String(day)])
           const isToday = day === today
+          const isDoneToday = isToday && trainedToday
           return (
             <div key={day} className="flex flex-1 flex-col items-center gap-1.5">
               <div
                 className={cn(
                   'flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-semibold transition-colors',
-                  hasWorkout ? 'bg-primary/20 text-primary' : 'bg-secondary text-muted-foreground',
-                  isToday && 'ring-2 ring-primary ring-offset-2 ring-offset-card'
+                  isDoneToday
+                    ? 'bg-primary text-primary-foreground'
+                    : hasWorkout
+                    ? 'bg-primary/20 text-primary'
+                    : 'bg-secondary text-muted-foreground',
+                  isToday && !isDoneToday && 'ring-2 ring-primary ring-offset-2 ring-offset-card'
                 )}
               >
-                {letter}
+                {isDoneToday ? <Check className="h-4 w-4" /> : letter}
               </div>
             </div>
           )

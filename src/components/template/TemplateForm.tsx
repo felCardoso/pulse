@@ -101,6 +101,7 @@ export default function TemplateForm({ existing }: Props) {
       warmupPercent: ex.warmupPercent,
       progression: ex.progression,
       restPauseEnabled: ex.restPauseEnabled,
+      unilateral: ex.unilateral,
     }))
 
     if (existing) {
