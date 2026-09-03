@@ -125,3 +125,11 @@ export interface ProgressPhoto {
   /** Compressed JPEG data URL (kept small — localStorage is ~5MB) */
   dataUrl: string
 }
+
+export interface Habit {
+  id: string
+  name: string
+  createdAt: string
+  /** Dates (YYYY-MM-DD) checked off. Only weekdays count toward the 30-day goal. */
+  completions: string[]
+}

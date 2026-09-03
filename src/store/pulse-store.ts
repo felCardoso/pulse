@@ -15,7 +15,20 @@ import type {
   MacroTargets,
   BodyMeasurement,
   ProgressPhoto,
+  Habit,
 } from '@/types'
+
+/** Rotina goal: 30 weekday check-ins (Sat/Sun don't count toward or against it). */
+export const ROUTINE_GOAL = 30
+
+export function isWeekday(dateStr: string): boolean {
+  const day = new Date(`${dateStr}T00:00:00`).getDay()
+  return day !== 0 && day !== 6
+}
+
+function todayStr(): string {
+  return new Date().toISOString().split('T')[0]
+}
 
 const DEFAULT_SETTINGS: AppSettings = {
   primaryHue: 262,
@@ -42,6 +55,9 @@ interface PulseStore {
   bodyMeasurements: BodyMeasurement[]
   weightGoalKg: number | null
   progressPhotos: ProgressPhoto[]
+
+  // Habits / Rotinas
+  habits: Habit[]
 
   // Weekly schedule: weekday (0=Sunday … 6=Saturday, as string) → templateId
   weeklySchedule: Record<string, string>
@@ -89,6 +105,18 @@ interface PulseStore {
   deleteProgressPhoto: (id: string) => void
   setWeeklySchedule: (weekday: number, templateId: string | null) => void
   completeOnboarding: () => void
+
+  // Habit actions
+  addHabit: (name: string) => Habit
+  deleteHabit: (id: string) => void
+  toggleHabitToday: (id: string) => void
+  getHabitProgress: (id: string) => {
+    count: number
+    target: number
+    percentage: number
+    isRoutine: boolean
+    checkedToday: boolean
+  }
 
   // Rest timer actions
   startRest: (seconds: number) => void
@@ -154,6 +182,7 @@ export const usePulseStore = create<PulseStore>()(
       bodyMeasurements: [],
       weightGoalKg: null,
       progressPhotos: [],
+      habits: [],
       weeklySchedule: {},
       onboardingCompleted: false,
       rest: null,
@@ -500,6 +529,50 @@ export const usePulseStore = create<PulseStore>()(
 
       deleteProgressPhoto: (id) => {
         set((s) => ({ progressPhotos: s.progressPhotos.filter((p) => p.id !== id) }))
+      },
+
+      addHabit: (name) => {
+        const habit: Habit = {
+          id: uuid(),
+          name: name.trim(),
+          createdAt: new Date().toISOString(),
+          completions: [],
+        }
+        set((s) => ({ habits: [...s.habits, habit] }))
+        return habit
+      },
+
+      deleteHabit: (id) => {
+        set((s) => ({ habits: s.habits.filter((h) => h.id !== id) }))
+      },
+
+      toggleHabitToday: (id) => {
+        const today = todayStr()
+        if (!isWeekday(today)) return
+        set((s) => ({
+          habits: s.habits.map((h) => {
+            if (h.id !== id) return h
+            const checked = h.completions.includes(today)
+            return {
+              ...h,
+              completions: checked
+                ? h.completions.filter((d) => d !== today)
+                : [...h.completions, today],
+            }
+          }),
+        }))
+      },
+
+      getHabitProgress: (id) => {
+        const habit = get().habits.find((h) => h.id === id)
+        const count = habit ? habit.completions.filter(isWeekday).length : 0
+        return {
+          count,
+          target: ROUTINE_GOAL,
+          percentage: Math.min(100, (count / ROUTINE_GOAL) * 100),
+          isRoutine: count >= ROUTINE_GOAL,
+          checkedToday: habit ? habit.completions.includes(todayStr()) : false,
+        }
       },
 
       startRest: (seconds) => {

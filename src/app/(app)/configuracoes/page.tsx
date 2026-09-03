@@ -41,6 +41,7 @@ export default function ConfiguracoesPage() {
   const weightGoalKg = usePulseStore((s) => s.weightGoalKg)
   const progressPhotos = usePulseStore((s) => s.progressPhotos)
   const weeklySchedule = usePulseStore((s) => s.weeklySchedule)
+  const habits = usePulseStore((s) => s.habits)
   const importRef = useRef<HTMLInputElement>(null)
   const [importError, setImportError] = useState<string | null>(null)
   const [importSuccess, setImportSuccess] = useState(false)
@@ -65,6 +66,7 @@ export default function ConfiguracoesPage() {
       weightGoalKg,
       progressPhotos,
       weeklySchedule,
+      habits,
     })
   }
 
@@ -89,6 +91,7 @@ export default function ConfiguracoesPage() {
           weightGoalKg: data.weightGoalKg ?? null,
           progressPhotos: data.progressPhotos ?? [],
           weeklySchedule: data.weeklySchedule ?? {},
+          habits: data.habits ?? [],
         })
         setImportSuccess(true)
       } catch {
@@ -111,6 +114,7 @@ export default function ConfiguracoesPage() {
       weightGoalKg: null,
       progressPhotos: [],
       weeklySchedule: {},
+      habits: [],
     })
     setShowClearDialog(false)
   }

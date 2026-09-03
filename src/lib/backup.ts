@@ -8,6 +8,7 @@ import type {
   MacroTargets,
   BodyMeasurement,
   ProgressPhoto,
+  Habit,
 } from '@/types'
 
 interface BackupData {
@@ -25,6 +26,7 @@ interface BackupData {
   weightGoalKg?: number | null
   progressPhotos?: ProgressPhoto[]
   weeklySchedule?: Record<string, string>
+  habits?: Habit[]
 }
 
 export type BackupPayload = Omit<BackupData, 'version' | 'exportedAt'>
@@ -63,5 +65,6 @@ export function parseBackup(json: string): BackupPayload {
     weightGoalKg: data.weightGoalKg ?? null,
     progressPhotos: data.progressPhotos ?? [],
     weeklySchedule: data.weeklySchedule ?? {},
+    habits: data.habits ?? [],
   }
 }

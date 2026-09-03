@@ -2,12 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Dumbbell, TrendingUp, Settings, Flame } from 'lucide-react'
+import { Dumbbell, TrendingUp, Settings, Flame, Repeat } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const tabs = [
   { href: '/treinos', label: 'Treinos', icon: Dumbbell, match: '/treinos' },
   { href: '/macros', label: 'Macros', icon: Flame, match: '/macros' },
+  { href: '/rotinas', label: 'Rotinas', icon: Repeat, match: '/rotinas' },
   { href: '/progresso', label: 'Progresso', icon: TrendingUp, match: '/progresso' },
   { href: '/configuracoes', label: 'Config', icon: Settings, match: '/configuracoes' },
 ]
@@ -25,7 +26,7 @@ export default function BottomNav() {
               key={href}
               href={href}
               className={cn(
-                'flex flex-col items-center gap-1 rounded-xl px-5 py-2 text-xs font-medium transition-colors',
+                'flex flex-col items-center gap-1 rounded-xl px-3 py-2 text-xs font-medium transition-colors',
                 active
                   ? 'text-primary'
                   : 'text-muted-foreground hover:text-foreground'
