@@ -21,6 +21,9 @@ import type {
 const DEFAULT_WARMUP_PERCENT = 60
 const DEFAULT_WARMUP_REPS = 8
 
+/** Rest-Pause mode always uses a fixed short rest, regardless of the exercise's configured rest. */
+const REST_PAUSE_SECONDS = 15
+
 /** Rounds to the nearest 2.5 (plate-friendly). */
 function roundWeight(w: number): number {
   return Math.max(0, Math.round(w / 2.5) * 2.5)
@@ -49,6 +52,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   hapticEnabled: true,
   soundEnabled: true,
   bioimpedance: false,
+  restPauseMode: false,
 }
 
 interface PulseStore {
@@ -558,7 +562,9 @@ export const usePulseStore = create<PulseStore>()(
       },
 
       startRest: (seconds) => {
-        set({ rest: { endsAt: Date.now() + seconds * 1000, totalSeconds: seconds } })
+        const effective = get().settings.restPauseMode ? REST_PAUSE_SECONDS : seconds
+        if (effective <= 0) return
+        set({ rest: { endsAt: Date.now() + effective * 1000, totalSeconds: effective } })
       },
 
       adjustRest: (deltaSeconds) => {

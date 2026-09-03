@@ -46,7 +46,7 @@ export default function LivreSessaoPage() {
   }
 
   const handleSetDone = (seconds: number) => {
-    if (seconds > 0) startRest(seconds)
+    startRest(seconds)
   }
 
   const handleFinish = () => {

@@ -252,6 +252,29 @@ export default function ConfiguracoesPage() {
               </div>
             </div>
           </section>
+
+          <section className="space-y-3">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Rest-Pause
+            </h2>
+            <div className="rounded-xl border border-border bg-card px-4 py-3.5">
+              <div className="flex items-center justify-between">
+                <div className="pr-3">
+                  <Label className="cursor-pointer">Modo Rest-Pause</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Todo descanso vira um intervalo curto e silencioso de 15s, avisado por
+                    uma vibração dupla em vez de som — pra treinar sem tirar o celular do bolso.
+                  </p>
+                </div>
+                {switchButton(
+                  settings.restPauseMode,
+                  () => updateSettings({ restPauseMode: !settings.restPauseMode }),
+                  'Modo Rest-Pause'
+                )}
+              </div>
+            </div>
+          </section>
+
           <p className="text-xs text-muted-foreground">
             A agenda semanal de treinos agora fica na aba Treinos.
           </p>

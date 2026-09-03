@@ -111,6 +111,12 @@ export interface AppSettings {
   soundEnabled: boolean
   /** Shows extra body-composition fields on the Progresso page */
   bioimpedance: boolean
+  /**
+   * Rest-Pause mode: every rest is a fixed, silent 15s countdown ending in
+   * a short double vibration instead of the normal sound + full duration —
+   * built for training by feel with the phone in your pocket.
+   */
+  restPauseMode: boolean
 }
 
 export interface BodyMeasurement {

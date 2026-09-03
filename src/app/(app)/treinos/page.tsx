@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import TemplateCard from '@/components/template/TemplateCard'
 import WeeklyScheduleCard from '@/components/template/WeeklyScheduleCard'
 import SessionCard from '@/components/history/SessionCard'
+import TrainingHeatmap from '@/components/history/TrainingHeatmap'
 import { usePulseStore } from '@/store/pulse-store'
 import { calcTotalVolume, computeStreak, formatDuration } from '@/utils/format'
 
@@ -70,6 +71,9 @@ export default function TreinosPage() {
           </div>
         )}
       </div>
+
+      {/* Streak heatmap — purely psychological: don't break the chain */}
+      {sessions.length > 0 && <TrainingHeatmap sessions={sessions} />}
 
       {/* Active workout banner */}
       {activeSession && (

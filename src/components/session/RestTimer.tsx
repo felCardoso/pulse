@@ -21,6 +21,7 @@ export default function RestTimer() {
   const stopRest = usePulseStore((s) => s.stopRest)
   const adjustRest = usePulseStore((s) => s.adjustRest)
   const activeSession = usePulseStore((s) => s.activeSession)
+  const restPauseMode = usePulseStore((s) => s.settings.restPauseMode)
 
   const haptic = useHaptic()
   const sound = useSound()
@@ -46,8 +47,13 @@ export default function RestTimer() {
     const end = () => {
       if (endedRef.current) return
       endedRef.current = true
-      haptic.restEnd()
-      sound.restEnd()
+      // Rest-Pause: silent — a short double buzz instead of the alarm sound.
+      if (restPauseMode) {
+        haptic.restPauseEnd()
+      } else {
+        haptic.restEnd()
+        sound.restEnd()
+      }
       notifyRestEnd()
       stopRest()
     }
@@ -139,7 +145,9 @@ export default function RestTimer() {
           </div>
 
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-muted-foreground">Descansando</p>
+            <p className="text-xs font-medium text-muted-foreground">
+              {restPauseMode ? 'Rest-Pause · silencioso' : 'Descansando'}
+            </p>
             {nextLabel && (
               <p className="truncate text-xs text-foreground">
                 Próxima: <span className="font-medium">{nextLabel}</span>
