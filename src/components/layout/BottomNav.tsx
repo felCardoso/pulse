@@ -45,10 +45,7 @@ export default function BottomNav() {
     <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-background/95 backdrop-blur-sm">
       <div className="relative mx-auto flex max-w-lg items-center px-2 pb-safe pt-2">
         <div className="flex flex-1 items-center justify-evenly">{leftTabs.map(renderTab)}</div>
-        <div className="flex w-16 shrink-0 flex-col items-center gap-1 rounded-xl px-3 py-2 text-xs font-medium">
-          <span className="h-7 w-5" />
-          <span className="text-muted-foreground">Iniciar</span>
-        </div>
+        <div className="w-16 shrink-0" />
         <div className="flex flex-1 items-center justify-evenly">{rightTabs.map(renderTab)}</div>
       </div>
 
