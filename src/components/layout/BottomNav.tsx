@@ -46,7 +46,7 @@ export default function BottomNav() {
       <div className="relative mx-auto flex max-w-lg items-center px-2 pb-safe pt-2">
         <div className="flex flex-1 items-center justify-evenly">{leftTabs.map(renderTab)}</div>
         <div className="flex w-16 shrink-0 flex-col items-center gap-1 rounded-xl px-3 py-2 text-xs font-medium">
-          <span className="h-5 w-5" />
+          <span className="h-7 w-5" />
           <span className={cn(treinoActive ? 'text-primary' : 'text-muted-foreground')}>Treinos</span>
         </div>
         <div className="flex flex-1 items-center justify-evenly">{rightTabs.map(renderTab)}</div>
@@ -64,7 +64,7 @@ export default function BottomNav() {
               : '/treinos/livre/sessao'
           }
           aria-label="Retomar treino"
-          className="-top-7 absolute left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-secondary text-primary shadow-lg shadow-black/40 ring-4 ring-background transition-transform active:scale-95"
+          className="-top-8 absolute left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-secondary text-primary shadow-lg shadow-black/40 ring-4 ring-background transition-transform active:scale-95"
         >
           <Play className="h-6 w-6 fill-primary" />
         </Link>
@@ -73,7 +73,7 @@ export default function BottomNav() {
           onClick={() => setShowStart(true)}
           aria-label="Iniciar treino"
           className={cn(
-            '-top-7 absolute left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-black/40 ring-4 ring-background transition-transform active:scale-95',
+            '-top-8 absolute left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-black/40 ring-4 ring-background transition-transform active:scale-95',
             treinoActive && 'scale-105'
           )}
         >
