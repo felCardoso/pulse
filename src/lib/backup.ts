@@ -7,6 +7,7 @@ import type {
   ProgressPhoto,
   Habit,
 } from '@/types'
+import { getLocalDateStr } from '@/utils/format'
 
 interface BackupData {
   version: number
@@ -35,7 +36,7 @@ export function exportBackup(data: BackupPayload) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `echo-backup-${new Date().toISOString().split('T')[0]}.json`
+  a.download = `echo-backup-${getLocalDateStr()}.json`
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)

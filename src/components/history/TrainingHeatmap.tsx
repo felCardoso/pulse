@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import { cn } from '@/lib/utils'
+import { getLocalDateStr } from '@/utils/format'
 import type { WorkoutSession } from '@/types'
 
 const WEEKS = 52
@@ -19,7 +20,7 @@ export default function TrainingHeatmap({ sessions }: { sessions: WorkoutSession
     const counts = new Map<string, number>()
     for (const s of sessions) {
       if (s.status !== 'completed') continue
-      const day = s.startedAt.split('T')[0]
+      const day = getLocalDateStr(new Date(s.startedAt))
       counts.set(day, (counts.get(day) ?? 0) + 1)
     }
 
@@ -37,7 +38,7 @@ export default function TrainingHeatmap({ sessions }: { sessions: WorkoutSession
     for (let w = 0; w < WEEKS; w++) {
       const column: DayCell[] = []
       for (let d = 0; d < 7; d++) {
-        const iso = cursor.toISOString().split('T')[0]
+        const iso = getLocalDateStr(cursor)
         column.push({ date: iso, count: counts.get(iso) ?? 0, inFuture: cursor > today })
         if (d === 0 && cursor.getMonth() !== lastMonth) {
           lastMonth = cursor.getMonth()

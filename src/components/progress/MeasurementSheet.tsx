@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { X, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useEchoStore } from '@/store/echo-store'
+import { getLocalDateStr } from '@/utils/format'
 
 interface Props {
   onClose: () => void
@@ -48,7 +49,7 @@ export default function MeasurementSheet({ onClose }: Props) {
     }
 
     addBodyMeasurement({
-      date: new Date().toISOString().split('T')[0],
+      date: getLocalDateStr(),
       weightKg: Math.round(weightNum * 10) / 10,
       ...(bioimpedance && {
         bodyFatPct: parseOptional(bio.bodyFatPct),

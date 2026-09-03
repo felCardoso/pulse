@@ -6,6 +6,8 @@ import { Disc, Dumbbell, Repeat, TrendingUp, WifiOff, ChevronLeft, Plus } from '
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useEchoStore } from '@/store/echo-store'
+import { useStoreHydrated } from '@/hooks/useStoreHydrated'
+import { getLocalDateStr } from '@/utils/format'
 
 export default function OnboardingFlow() {
   const router = useRouter()
@@ -27,14 +29,7 @@ export default function OnboardingFlow() {
   // Wait for localStorage hydration so existing users never see a flash.
   // persist API is unavailable during SSR/prerender — only touch it in
   // an effect (this is what broke the Vercel build when accessed in render).
-  const [hydrated, setHydrated] = useState(false)
-  useEffect(() => {
-    if (useEchoStore.persist?.hasHydrated()) {
-      setHydrated(true)
-      return
-    }
-    return useEchoStore.persist?.onFinishHydration(() => setHydrated(true))
-  }, [])
+  const hydrated = useStoreHydrated()
 
   // Existing users (data present but flag missing) skip silently.
   useEffect(() => {
@@ -53,7 +48,7 @@ export default function OnboardingFlow() {
   const finish = (createWorkout: boolean) => {
     if (hasWeight) {
       addBodyMeasurement({
-        date: new Date().toISOString().split('T')[0],
+        date: getLocalDateStr(),
         weightKg: Math.round(weightNum * 10) / 10,
       })
     }

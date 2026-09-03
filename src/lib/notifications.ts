@@ -6,6 +6,8 @@
 // these can only fire while the app is open (or freshly reopened) — there
 // is no true background/scheduled delivery when the app is fully closed.
 
+import { getLocalDateStr } from '@/utils/format'
+
 export function canNotify(): boolean {
   return typeof window !== 'undefined' && 'Notification' in window
 }
@@ -36,7 +38,7 @@ async function showLocalNotification(title: string, options: NotificationOptions
 }
 
 function todayKey(): string {
-  return new Date().toISOString().split('T')[0]
+  return getLocalDateStr()
 }
 
 /** True once per calendar day per key — used to avoid re-notifying on every reopen. */

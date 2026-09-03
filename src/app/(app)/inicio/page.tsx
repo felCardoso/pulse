@@ -9,7 +9,7 @@ import SessionCard from '@/components/history/SessionCard'
 import TrainingHeatmap from '@/components/history/TrainingHeatmap'
 import WeightChart from '@/components/progress/WeightChart'
 import { useEchoStore } from '@/store/echo-store'
-import { calcTotalVolume, computeStreak, formatDuration } from '@/utils/format'
+import { calcTotalVolume, computeStreak, formatDuration, getLocalDateStr } from '@/utils/format'
 import { getTodaySuggestion } from '@/utils/schedule'
 import { requestNotificationPermission, notifyWorkoutReminder } from '@/lib/notifications'
 
@@ -38,7 +38,7 @@ export default function InicioPage() {
   const volumePoints = [...completedSessions]
     .reverse()
     .slice(-12)
-    .map((s) => ({ date: s.startedAt.split('T')[0], value: Math.round(calcTotalVolume(s.exercises)) }))
+    .map((s) => ({ date: getLocalDateStr(new Date(s.startedAt)), value: Math.round(calcTotalVolume(s.exercises)) }))
 
   const handleFreeWorkout = () => {
     startWorkout(null)
@@ -65,8 +65,8 @@ export default function InicioPage() {
 
   useEffect(() => {
     if (!workoutReminders || activeSession || !suggestedTemplate) return
-    const today = new Date().toISOString().split('T')[0]
-    const trainedToday = completedSessions.some((s) => s.startedAt.split('T')[0] === today)
+    const today = getLocalDateStr()
+    const trainedToday = completedSessions.some((s) => getLocalDateStr(new Date(s.startedAt)) === today)
     if (trainedToday) return
     notifyWorkoutReminder(suggestedTemplate.name)
     // eslint-disable-next-line react-hooks/exhaustive-deps

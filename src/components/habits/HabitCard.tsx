@@ -5,6 +5,7 @@ import { Check, Trash2, PartyPopper } from 'lucide-react'
 import { useEchoStore, isWeekday } from '@/store/echo-store'
 import ContextMenu from '@/components/ui/context-menu'
 import ConfirmDialog from '@/components/ui/confirm-dialog'
+import { getLocalDateStr } from '@/utils/format'
 import type { Habit } from '@/types'
 
 interface Props {
@@ -18,7 +19,7 @@ export default function HabitCard({ habit }: Props) {
   const [confirmOpen, setConfirmOpen] = useState(false)
 
   const { count, target, percentage, isRoutine, checkedToday } = getHabitProgress(habit.id)
-  const today = new Date().toISOString().split('T')[0]
+  const today = getLocalDateStr()
   const isDaily = habit.frequency === 'daily'
   const canCheckToday = isDaily || isWeekday(today)
 

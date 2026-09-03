@@ -3,6 +3,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { v4 as uuid } from 'uuid'
+import { getLocalDateStr } from '@/utils/format'
 import type {
   WorkoutTemplate,
   ExerciseTemplate,
@@ -42,7 +43,7 @@ function countsForHabit(dateStr: string, frequency: HabitFrequency): boolean {
 }
 
 function todayStr(): string {
-  return new Date().toISOString().split('T')[0]
+  return getLocalDateStr()
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -514,7 +515,7 @@ export const useEchoStore = create<EchoStore>()(
       addProgressPhoto: (dataUrl) => {
         const photo: ProgressPhoto = {
           id: uuid(),
-          date: new Date().toISOString().split('T')[0],
+          date: getLocalDateStr(),
           dataUrl,
         }
         set((s) => ({ progressPhotos: [...s.progressPhotos, photo] }))

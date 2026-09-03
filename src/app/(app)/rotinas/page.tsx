@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react'
 import { Plus, Repeat } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useEchoStore, isWeekday } from '@/store/echo-store'
+import { useStoreHydrated } from '@/hooks/useStoreHydrated'
 import HabitCard from '@/components/habits/HabitCard'
 import AddHabitDialog from '@/components/habits/AddHabitDialog'
 import { requestNotificationPermission, notifyRoutineReminder } from '@/lib/notifications'
+import { getLocalDateStr } from '@/utils/format'
 
 export default function RotinasPage() {
   const habits = useEchoStore((s) => s.habits)
@@ -14,19 +16,24 @@ export default function RotinasPage() {
   const routineReminders = useEchoStore((s) => s.settings.routineReminders)
   const [showAdd, setShowAdd] = useState(false)
 
+  // The persisted store hydrates asynchronously — without waiting for it,
+  // `habits` is still [] on the very first render and the reminder below
+  // always computes 0 pending.
+  const hydrated = useStoreHydrated()
+
   // Best-effort routine reminder: fires at most once/day, only while the
   // app is open (no push server behind this, so no true background alert).
   useEffect(() => {
     requestNotificationPermission()
-    if (!routineReminders) return
-    const today = new Date().toISOString().split('T')[0]
+    if (!hydrated || !routineReminders) return
+    const today = getLocalDateStr()
     const pending = habits.filter((h) => {
       const countsToday = h.frequency === 'daily' || isWeekday(today)
       return countsToday && !getHabitProgress(h.id).checkedToday
     }).length
     notifyRoutineReminder(pending)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routineReminders])
+  }, [hydrated, routineReminders])
 
   return (
     <div className="space-y-6 pb-8">

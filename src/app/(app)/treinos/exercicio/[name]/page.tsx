@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Dumbbell, Trophy } from 'lucide-react'
 import { useEchoStore } from '@/store/echo-store'
 import WeightChart from '@/components/progress/WeightChart'
-import { formatRelativeDate } from '@/utils/format'
+import { formatRelativeDate, getLocalDateStr } from '@/utils/format'
 
 export default function ExercicioEvolucaoPage() {
   const params = useParams<{ name: string }>()
@@ -35,7 +35,7 @@ export default function ExercicioEvolucaoPage() {
       )
       return {
         sessionId: session.id,
-        date: session.startedAt.split('T')[0],
+        date: getLocalDateStr(new Date(session.startedAt)),
         startedAt: session.startedAt,
         maxWeight,
         volume: Math.round(volume),
