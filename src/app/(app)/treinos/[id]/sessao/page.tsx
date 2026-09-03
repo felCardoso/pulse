@@ -6,10 +6,12 @@ import { Flag, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import ActiveWorkoutHeader from '@/components/session/ActiveWorkoutHeader'
 import ExerciseTracker from '@/components/session/ExerciseTracker'
+import SupersetGroupTracker from '@/components/session/SupersetGroupTracker'
 import AddExerciseSheet from '@/components/session/AddExerciseSheet'
 import { useActiveWorkout } from '@/hooks/useActiveWorkout'
 import { useWakeLock } from '@/hooks/useWakeLock'
 import { useEchoStore } from '@/store/echo-store'
+import { groupBySuperset } from '@/utils/superset'
 import type { SessionExercise } from '@/types'
 
 export default function SessaoPage() {
@@ -76,15 +78,25 @@ export default function SessaoPage() {
         />
 
         <div className="flex-1 overflow-y-auto px-4 py-4 pb-40 max-w-lg mx-auto w-full space-y-3">
-          {exercises.map((exercise) => (
-            <ExerciseTracker
-              key={exercise.id}
-              exercise={exercise}
-              isCurrentExercise={currentExercise?.id === exercise.id}
-              weightUnit={weightUnit}
-              onSetDone={handleSetDone}
-            />
-          ))}
+          {groupBySuperset(exercises).map((group) =>
+            group.length > 1 ? (
+              <SupersetGroupTracker
+                key={group[0].id}
+                group={group}
+                isCurrentGroup={group.some((e) => e.id === currentExercise?.id)}
+                weightUnit={weightUnit}
+                onSetDone={handleSetDone}
+              />
+            ) : (
+              <ExerciseTracker
+                key={group[0].id}
+                exercise={group[0]}
+                isCurrentExercise={currentExercise?.id === group[0].id}
+                weightUnit={weightUnit}
+                onSetDone={handleSetDone}
+              />
+            )
+          )}
 
           {/* Add exercise button */}
           <button

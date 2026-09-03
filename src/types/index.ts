@@ -46,6 +46,13 @@ export interface ExerciseTemplate {
    * sound + configured duration — for training by feel, phone in pocket.
    */
   restPauseEnabled?: boolean
+  /**
+   * Superset/circuit: this exercise and the next one in the list alternate
+   * set-by-set with no rest between them — rest only happens after the
+   * last exercise in the chain finishes its set for that round. Chaining
+   * this flag across 3+ consecutive exercises forms a circuit.
+   */
+  supersetWithNext?: boolean
 }
 
 export interface WorkoutTemplate {
@@ -93,6 +100,8 @@ export interface SessionExercise {
   warmupPercent?: number
   progression?: ProgressionConfig
   restPauseEnabled?: boolean
+  /** See ExerciseTemplate.supersetWithNext. */
+  supersetWithNext?: boolean
 }
 
 export interface WorkoutSession {
