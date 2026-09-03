@@ -10,11 +10,11 @@
     --card-foreground: 210 10% 95%;
     --popover: 0 0% 9%;
     --popover-foreground: 210 10% 95%;
-    --primary-hue: 262;
-    --primary-saturation: 83%;
-    --primary-lightness: 68%;
+    --primary-hue: 64;
+    --primary-saturation: 100%;
+    --primary-lightness: 45%;
     --primary: var(--primary-hue) var(--primary-saturation) var(--primary-lightness);
-    --primary-foreground: 0 0% 100%;
+    --primary-foreground: 60 15% 9%;
     --secondary: 0 0% 14%;
     --secondary-foreground: 210 10% 85%;
     --muted: 0 0% 14%;
@@ -44,6 +44,10 @@
 
   code, pre, .font-mono {
     font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  }
+
+  .font-heading {
+    font-family: var(--font-space-grotesk), var(--font-geist-sans), ui-sans-serif, sans-serif;
   }
 }
 

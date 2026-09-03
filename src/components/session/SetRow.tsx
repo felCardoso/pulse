@@ -57,7 +57,7 @@ export default function SetRow({
         <span className="w-5 text-center text-xs font-semibold text-muted-foreground">
           {set.setNumber}
         </span>
-        <span className="flex-1 text-sm text-muted-foreground line-through">
+        <span className="font-heading flex-1 text-sm text-muted-foreground line-through">
           {set.weight != null ? `${set.weight}${weightUnit}` : '—'} × {set.reps}
         </span>
         <Check className="h-4 w-4 text-primary" />

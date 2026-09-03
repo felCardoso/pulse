@@ -10,7 +10,7 @@ import { NextRequest, NextResponse } from 'next/server'
 // NOTE: there is NO /api/v3/search endpoint — that was the source of the 503s.
 
 const USER_AGENT =
-  'Pulse-Workout-App/1.0 (https://github.com/felCardoso/pulse; pcardoso.felipe@gmail.com)'
+  'Loop-App/1.0 (https://github.com/felCardoso/pulse; pcardoso.felipe@gmail.com)'
 
 const FIELDS = 'product_name,nutriments,code,brands,countries_tags'
 

@@ -51,7 +51,7 @@ export default function RecordesPage() {
                   {pr.exerciseName}
                 </p>
                 <p className="text-xs text-muted-foreground tabular-nums">
-                  Carga máx: <span className="font-semibold text-foreground">{pr.maxWeight}{weightUnit}</span>
+                  Carga máx: <span className="font-heading font-semibold text-foreground">{pr.maxWeight}{weightUnit}</span>
                   {' · '}Volume máx: {Math.round(pr.maxVolume)}{weightUnit}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">

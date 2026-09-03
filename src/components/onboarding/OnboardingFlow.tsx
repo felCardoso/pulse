@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Zap, Dumbbell, Flame, TrendingUp, WifiOff, ChevronLeft, Plus, Check } from 'lucide-react'
+import { Disc, Dumbbell, Flame, TrendingUp, WifiOff, ChevronLeft, Plus, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { usePulseStore } from '@/store/pulse-store'
@@ -155,10 +155,10 @@ export default function OnboardingFlow() {
           <div className="flex flex-1 flex-col justify-center gap-8">
             <div className="flex flex-col items-center gap-4 text-center">
               <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/15">
-                <Zap className="h-10 w-10 text-primary" />
+                <Disc className="h-10 w-10 text-primary" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Bem-vindo ao Pulse</h1>
+                <h1 className="font-heading text-2xl font-bold text-foreground">Bem-vindo ao Loop</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Treino, macros e progresso corporal em um só lugar
                 </p>

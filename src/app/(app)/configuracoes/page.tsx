@@ -95,7 +95,7 @@ export default function ConfiguracoesPage() {
         })
         setImportSuccess(true)
       } catch {
-        setImportError('Arquivo inválido. Verifique se é um backup do Pulse.')
+        setImportError('Arquivo inválido. Verifique se é um backup do Loop.')
       }
     }
     reader.readAsText(file)
@@ -354,7 +354,7 @@ export default function ConfiguracoesPage() {
           </section>
 
           <p className="text-center text-xs text-muted-foreground">
-            Pulse · {templates.length} treinos · {sessions.length} sessões
+            <span className="font-heading">Loop</span> · {templates.length} treinos · {sessions.length} sessões
           </p>
         </div>
       )}

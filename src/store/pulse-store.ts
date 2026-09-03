@@ -36,7 +36,7 @@ function todayStr(): string {
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
-  primaryHue: 262,
+  primaryHue: 64,
   weightUnit: 'kg',
   defaultRestSeconds: 90,
   hapticEnabled: true,

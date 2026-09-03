@@ -1,7 +1,7 @@
 {
-  "name": "Pulse",
-  "short_name": "Pulse",
-  "description": "Acompanhe seus treinos na academia.",
+  "name": "Loop",
+  "short_name": "Loop",
+  "description": "Acompanhe seus treinos, macros e rotinas.",
   "start_url": "/treinos",
   "scope": "/",
   "display": "standalone",

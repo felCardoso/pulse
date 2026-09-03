@@ -129,7 +129,7 @@ export default function RestTimer() {
                 style={{ transition: 'stroke-dashoffset 0.5s linear' }}
               />
             </svg>
-            <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold tabular-nums text-foreground">
+            <span className="font-heading absolute inset-0 flex items-center justify-center text-[11px] font-bold tabular-nums text-foreground">
               {formatRestTime(timeLeft)}
             </span>
           </div>
