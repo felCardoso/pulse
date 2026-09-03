@@ -40,6 +40,12 @@ export interface ExerciseTemplate {
   warmupPercent?: number
   /** Automatic weight progression rule for this exercise. */
   progression?: ProgressionConfig
+  /**
+   * Rest-Pause: every rest for this exercise is a fixed, silent 15s
+   * countdown ending in a short double vibration instead of the normal
+   * sound + configured duration — for training by feel, phone in pocket.
+   */
+  restPauseEnabled?: boolean
 }
 
 export interface WorkoutTemplate {
@@ -60,6 +66,12 @@ export interface SetLog {
   doneAt?: string
   /** A lighter warm-up set — excluded from PRs, volume, and progression. */
   isWarmup?: boolean
+  /**
+   * Reps in Reserve (0-3) — how many more reps you had left in the tank.
+   * 0 means true failure. Used to hold back an auto progression increase
+   * when a set was already maxed out, instead of pushing further.
+   */
+  rir?: number
 }
 
 export interface SessionExercise {
@@ -80,6 +92,7 @@ export interface SessionExercise {
   warmupEnabled?: boolean
   warmupPercent?: number
   progression?: ProgressionConfig
+  restPauseEnabled?: boolean
 }
 
 export interface WorkoutSession {
@@ -112,11 +125,10 @@ export interface AppSettings {
   /** Shows extra body-composition fields on the Progresso page */
   bioimpedance: boolean
   /**
-   * Rest-Pause mode: every rest is a fixed, silent 15s countdown ending in
-   * a short double vibration instead of the normal sound + full duration —
-   * built for training by feel with the phone in your pocket.
+   * Focus Mode: rest becomes a full-screen black display with a giant
+   * countdown — tap the number to pause/resume, tap anywhere else for +10s.
    */
-  restPauseMode: boolean
+  focusModeEnabled: boolean
 }
 
 export interface BodyMeasurement {

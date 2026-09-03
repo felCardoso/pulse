@@ -255,24 +255,28 @@ export default function ConfiguracoesPage() {
 
           <section className="space-y-3">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Rest-Pause
+              Descanso
             </h2>
             <div className="rounded-xl border border-border bg-card px-4 py-3.5">
               <div className="flex items-center justify-between">
                 <div className="pr-3">
-                  <Label className="cursor-pointer">Modo Rest-Pause</Label>
+                  <Label className="cursor-pointer">Modo Foco Absoluto</Label>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Todo descanso vira um intervalo curto e silencioso de 15s, avisado por
-                    uma vibração dupla em vez de som — pra treinar sem tirar o celular do bolso.
+                    Durante o descanso, a tela fica só preta com a contagem gigante em destaque.
+                    Toque no número pausa ou retoma; toque no resto da tela soma +10s.
                   </p>
                 </div>
                 {switchButton(
-                  settings.restPauseMode,
-                  () => updateSettings({ restPauseMode: !settings.restPauseMode }),
-                  'Modo Rest-Pause'
+                  settings.focusModeEnabled,
+                  () => updateSettings({ focusModeEnabled: !settings.focusModeEnabled }),
+                  'Modo Foco Absoluto'
                 )}
               </div>
             </div>
+            <p className="text-xs text-muted-foreground">
+              O Rest-Pause (descanso curto e silencioso) agora é configurado por exercício,
+              ao montar o treino.
+            </p>
           </section>
 
           <p className="text-xs text-muted-foreground">

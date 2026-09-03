@@ -63,11 +63,21 @@ export function getAutoProgression(
   const sets = workingSets(last).filter((s) => s.done && s.weight != null && s.reps != null)
   if (sets.length === 0) return null
   const lastWeight = Math.max(...sets.map((s) => s.weight as number))
+  // RIR 0 = true failure. Safety first: never push the load further off the
+  // back of a set that was already maxed out — hold at the same weight and
+  // say why, instead of compounding the risk next session.
+  const hitFailure = sets.some((s) => s.rir === 0)
 
   switch (config.type) {
     case 'linear': {
       const target = parseTargetReps(plannedReps)
       const allHit = target != null && sets.every((s) => (s.reps as number) >= target)
+      if (allHit && hitFailure) {
+        return {
+          weight: lastWeight,
+          reason: 'Progressão linear: bateu as reps, mas chegou à falha (RIR 0) — repita o peso por segurança',
+        }
+      }
       if (allHit) {
         return {
           weight: round(lastWeight + config.step),
@@ -85,10 +95,22 @@ export function getAutoProgression(
       const target = parseTargetReps(plannedReps) ?? 5
       const amrapReps = sets[sets.length - 1].reps as number
 
+      if (amrapReps >= target * 2 && hitFailure) {
+        return {
+          weight: lastWeight,
+          reason: 'Greyskull LP: dobrou o AMRAP, mas foi até a falha (RIR 0) — segure o peso por segurança',
+        }
+      }
       if (amrapReps >= target * 2) {
         return {
           weight: round(lastWeight + config.step * 2),
           reason: `Greyskull LP: dobrou as reps no AMRAP — bônus de +${round(config.step * 2)}`,
+        }
+      }
+      if (amrapReps >= target && hitFailure) {
+        return {
+          weight: lastWeight,
+          reason: 'Greyskull LP: bateu o AMRAP até a falha (RIR 0) — repita o peso por segurança',
         }
       }
       if (amrapReps >= target) {
@@ -125,6 +147,13 @@ export function getAutoProgression(
       const minReps = Math.min(...reps)
       const allAtTop = reps.every((r) => r >= to)
 
+      if (allAtTop && hitFailure) {
+        return {
+          weight: lastWeight,
+          reps: to,
+          reason: `Dupla progressão: bateu ${to} reps, mas até a falha (RIR 0) — repita o peso por segurança`,
+        }
+      }
       if (allAtTop) {
         return {
           weight: round(lastWeight + config.step),

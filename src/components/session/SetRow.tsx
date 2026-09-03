@@ -8,6 +8,8 @@ import type { SetLog } from '@/types'
 
 const WEIGHT_STEP = 2.5
 
+const RIR_LABELS = ['Falha', '1 na reserva', '2 na reserva', '3+ na reserva']
+
 interface Props {
   set: SetLog
   weightUnit: 'kg' | 'lbs'
@@ -15,7 +17,7 @@ interface Props {
   previousReps?: number
   /** No weight is logged for this exercise — only reps. */
   bodyweight?: boolean
-  onComplete: (weight: number | undefined, reps: number | undefined) => void
+  onComplete: (weight: number | undefined, reps: number | undefined, rir: number | undefined) => void
 }
 
 export default function SetRow({
@@ -28,6 +30,7 @@ export default function SetRow({
 }: Props) {
   const [weight, setWeight] = useState(set.weight != null ? String(set.weight) : '')
   const [reps, setReps] = useState(set.reps != null ? String(set.reps) : '')
+  const [rir, setRir] = useState<number | undefined>(set.rir)
   const [shake, setShake] = useState(false)
 
   // One-tap logging: an empty field falls back to the placeholder value
@@ -44,7 +47,8 @@ export default function SetRow({
     }
     onComplete(
       effectiveWeight != null && !isNaN(effectiveWeight) ? effectiveWeight : undefined,
-      effectiveReps
+      effectiveReps,
+      rir
     )
   }
 
@@ -76,63 +80,96 @@ export default function SetRow({
               ? `${set.weight}${weightUnit}`
               : '—'} × {set.reps}
         </span>
+        {set.rir != null && (
+          <span className="shrink-0 rounded bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+            RIR {set.rir}
+          </span>
+        )}
         <Check className="h-4 w-4 text-primary" />
       </div>
     )
   }
 
   return (
-    <div className={cn('flex items-center gap-1.5', shake && 'animate-shake')}>
-      {label}
+    <div className={cn('space-y-1.5', shake && 'animate-shake')}>
+      <div className="flex items-center gap-1.5">
+        {label}
 
-      {!bodyweight && (
-        <>
-          <button
-            onClick={() => stepWeight(-WEIGHT_STEP)}
-            className="flex h-9 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground transition-colors hover:text-foreground active:scale-95"
-            aria-label={`Diminuir ${WEIGHT_STEP}${weightUnit}`}
-            tabIndex={-1}
-          >
-            <Minus className="h-3.5 w-3.5" />
-          </button>
+        {!bodyweight && (
+          <>
+            <button
+              onClick={() => stepWeight(-WEIGHT_STEP)}
+              className="flex h-9 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground transition-colors hover:text-foreground active:scale-95"
+              aria-label={`Diminuir ${WEIGHT_STEP}${weightUnit}`}
+              tabIndex={-1}
+            >
+              <Minus className="h-3.5 w-3.5" />
+            </button>
 
-          <Input
-            type="number"
-            inputMode="decimal"
-            placeholder={previousWeight != null ? String(previousWeight) : weightUnit}
-            value={weight}
-            onChange={(e) => setWeight(e.target.value)}
-            className="h-9 flex-1 min-w-0 text-center"
+            <Input
+              type="number"
+              inputMode="decimal"
+              placeholder={previousWeight != null ? String(previousWeight) : weightUnit}
+              value={weight}
+              onChange={(e) => setWeight(e.target.value)}
+              className="h-9 flex-1 min-w-0 text-center"
+            />
+
+            <button
+              onClick={() => stepWeight(WEIGHT_STEP)}
+              className="flex h-9 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground transition-colors hover:text-foreground active:scale-95"
+              aria-label={`Aumentar ${WEIGHT_STEP}${weightUnit}`}
+              tabIndex={-1}
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+
+            <span className="text-muted-foreground">×</span>
+          </>
+        )}
+
+        <Input
+          type="number"
+          inputMode="numeric"
+          placeholder={previousReps != null ? String(previousReps) : 'reps'}
+          value={reps}
+          onChange={(e) => setReps(e.target.value)}
+          className={cn('h-9 shrink-0 text-center', bodyweight ? 'flex-1' : 'w-14')}
+        />
+
+        <button
+          onClick={handleDone}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary hover:bg-primary hover:text-primary-foreground transition-colors active:scale-95"
+        >
+          <Check className="h-4 w-4" />
+        </button>
+      </div>
+
+      {/* RIR (Reps in Reserve) — 0 means true failure; the app uses this to
+          hold back an auto progression increase instead of pushing further. */}
+      {!set.isWarmup && (
+        <div className="flex items-center gap-2 pl-6 pr-11">
+          <span className="shrink-0 text-[10px] font-medium text-muted-foreground">RIR</span>
+          <input
+            type="range"
+            min={0}
+            max={3}
+            step={1}
+            value={rir ?? 3}
+            onChange={(e) => setRir(Number(e.target.value))}
+            className="h-1.5 flex-1 accent-primary"
+            aria-label="Repetições na reserva"
           />
-
-          <button
-            onClick={() => stepWeight(WEIGHT_STEP)}
-            className="flex h-9 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground transition-colors hover:text-foreground active:scale-95"
-            aria-label={`Aumentar ${WEIGHT_STEP}${weightUnit}`}
-            tabIndex={-1}
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </button>
-
-          <span className="text-muted-foreground">×</span>
-        </>
+          <span className="w-4 shrink-0 text-center text-[10px] font-semibold text-foreground tabular-nums">
+            {rir ?? 3}
+          </span>
+        </div>
       )}
-
-      <Input
-        type="number"
-        inputMode="numeric"
-        placeholder={previousReps != null ? String(previousReps) : 'reps'}
-        value={reps}
-        onChange={(e) => setReps(e.target.value)}
-        className={cn('h-9 shrink-0 text-center', bodyweight ? 'flex-1' : 'w-14')}
-      />
-
-      <button
-        onClick={handleDone}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary hover:bg-primary hover:text-primary-foreground transition-colors active:scale-95"
-      >
-        <Check className="h-4 w-4" />
-      </button>
+      {!set.isWarmup && (
+        <p className="pl-6 pr-11 text-[9px] text-muted-foreground/70">
+          {RIR_LABELS[rir ?? 3]}
+        </p>
+      )}
     </div>
   )
 }

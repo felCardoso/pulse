@@ -28,6 +28,7 @@ export default function AddExerciseSheet({ onAdd, onClose }: Props) {
   const [bodyweight, setBodyweight] = useState(false)
   const [warmupEnabled, setWarmupEnabled] = useState(false)
   const [warmupPercent, setWarmupPercent] = useState(String(DEFAULT_WARMUP_PERCENT))
+  const [restPauseEnabled, setRestPauseEnabled] = useState(false)
 
   const library = getExerciseLibrary()
 
@@ -60,6 +61,7 @@ export default function AddExerciseSheet({ onAdd, onClose }: Props) {
         bodyweight,
         warmupEnabled,
         warmupPercent: parseInt(warmupPercent) || DEFAULT_WARMUP_PERCENT,
+        restPauseEnabled,
         sets: Array.from({ length: plannedSets }, (_, i) => ({
           id: uuid(),
           setNumber: i + 1,
@@ -218,6 +220,23 @@ export default function AddExerciseSheet({ onAdd, onClose }: Props) {
                   </div>
                 )}
               </div>
+
+              {/* Rest-Pause */}
+              <label className="flex items-start gap-2.5 rounded-lg border border-border bg-secondary/40 px-3 py-2.5">
+                <input
+                  type="checkbox"
+                  checked={restPauseEnabled}
+                  onChange={(e) => setRestPauseEnabled(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-primary"
+                />
+                <span>
+                  <span className="block text-xs font-medium text-foreground">Rest-Pause</span>
+                  <span className="block text-[11px] text-muted-foreground">
+                    Troca o descanso configurado por um intervalo curto e silencioso de 15s,
+                    avisado por vibração dupla em vez de som.
+                  </span>
+                </span>
+              </label>
             </>
           )}
 

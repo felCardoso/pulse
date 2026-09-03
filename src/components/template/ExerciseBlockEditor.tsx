@@ -277,6 +277,23 @@ export default function ExerciseBlockEditor({
             )}
           </div>
 
+          {/* Rest-Pause */}
+          <label className="flex items-start gap-2.5 rounded-lg border border-border bg-secondary/40 px-3 py-2.5">
+            <input
+              type="checkbox"
+              checked={!!exercise.restPauseEnabled}
+              onChange={(e) => onChange({ restPauseEnabled: e.target.checked })}
+              className="mt-0.5 h-4 w-4 accent-primary"
+            />
+            <span>
+              <span className="block text-xs font-medium text-foreground">Rest-Pause</span>
+              <span className="block text-[11px] text-muted-foreground">
+                Troca o descanso configurado por um intervalo curto e silencioso de 15s,
+                avisado por vibração dupla em vez de som — pra encadear séries rápido.
+              </span>
+            </span>
+          </label>
+
           {/* Progressão automática */}
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Progressão automática</Label>

@@ -52,7 +52,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   hapticEnabled: true,
   soundEnabled: true,
   bioimpedance: false,
-  restPauseMode: false,
+  focusModeEnabled: false,
 }
 
 interface PulseStore {
@@ -78,7 +78,14 @@ interface PulseStore {
 
   // Global rest timer — lives in the store so the countdown pill survives
   // navigation between tabs (and even an app reload, since it persists).
-  rest: { endsAt: number; totalSeconds: number } | null
+  rest: {
+    endsAt: number
+    totalSeconds: number
+    /** This exercise had Rest-Pause enabled — short, silent, vibration-only end cue. */
+    isRestPause?: boolean
+    /** Set while paused (Focus Mode) — the frozen remaining ms, used instead of endsAt. */
+    pausedRemainingMs?: number
+  } | null
 
   // Template actions
   addTemplate: (template: Omit<WorkoutTemplate, 'id' | 'createdAt' | 'updatedAt'>) => WorkoutTemplate
@@ -90,7 +97,7 @@ interface PulseStore {
   updateActiveSession: (data: Partial<WorkoutSession>) => void
   addExerciseToActiveSession: (exercise: Omit<SessionExercise, 'id' | 'order'>) => void
   /** Returns true when this set just set a new personal record. */
-  completeSet: (exerciseId: string, setId: string, weight: number | undefined, reps: number | undefined) => boolean
+  completeSet: (exerciseId: string, setId: string, weight: number | undefined, reps: number | undefined, rir?: number) => boolean
   completeTimeExercise: (exerciseId: string, minutes: number) => void
   /** Inserts a warm-up set before the working sets, weight pre-filled from history. */
   addWarmupSet: (exerciseId: string) => void
@@ -124,9 +131,11 @@ interface PulseStore {
   }
 
   // Rest timer actions
-  startRest: (seconds: number) => void
+  startRest: (seconds: number, isRestPause?: boolean) => void
   adjustRest: (deltaSeconds: number) => void
   stopRest: () => void
+  pauseRest: () => void
+  resumeRest: () => void
 
   // Computed
   getExerciseLibrary: () => string[]
@@ -150,6 +159,7 @@ function buildSessionExercises(exercises: ExerciseTemplate[]): SessionExercise[]
     warmupEnabled: ex.warmupEnabled,
     warmupPercent: ex.warmupPercent,
     progression: ex.progression,
+    restPauseEnabled: ex.restPauseEnabled,
     // Time-based exercises log a single duration, not a set of reps.
     sets: ex.trackBy === 'time'
       ? []
@@ -279,7 +289,7 @@ export const usePulseStore = create<PulseStore>()(
         }))
       },
 
-      completeSet: (exerciseId, setId, weight, reps) => {
+      completeSet: (exerciseId, setId, weight, reps, rir) => {
         const state = get()
         if (!state.activeSession) return false
 
@@ -293,7 +303,7 @@ export const usePulseStore = create<PulseStore>()(
           const updatedSets = ex.sets.map((s) => {
             if (s.id !== setId) return s
             isWarmupSet = !!s.isWarmup
-            return { ...s, weight, reps, done: true, doneAt: now }
+            return { ...s, weight, reps, rir, done: true, doneAt: now }
           })
           // Warm-up sets don't gate exercise completion — only working sets do.
           const allDone = updatedSets.filter((s) => !s.isWarmup).every((s) => s.done)
@@ -561,17 +571,27 @@ export const usePulseStore = create<PulseStore>()(
         }
       },
 
-      startRest: (seconds) => {
-        const effective = get().settings.restPauseMode ? REST_PAUSE_SECONDS : seconds
+      startRest: (seconds, isRestPause) => {
+        const effective = isRestPause ? REST_PAUSE_SECONDS : seconds
         if (effective <= 0) return
-        set({ rest: { endsAt: Date.now() + effective * 1000, totalSeconds: effective } })
+        set({ rest: { endsAt: Date.now() + effective * 1000, totalSeconds: effective, isRestPause } })
       },
 
       adjustRest: (deltaSeconds) => {
         set((s) => {
           if (!s.rest) return {}
+          // Paused (Focus Mode): adjust the frozen remaining time directly.
+          if (s.rest.pausedRemainingMs != null) {
+            return {
+              rest: {
+                ...s.rest,
+                pausedRemainingMs: Math.max(1000, s.rest.pausedRemainingMs + deltaSeconds * 1000),
+              },
+            }
+          }
           return {
             rest: {
+              ...s.rest,
               // Never adjust below ~1s so the countdown always ends naturally
               // (with the end-of-rest feedback) instead of jumping negative.
               endsAt: Math.max(Date.now() + 1000, s.rest.endsAt + deltaSeconds * 1000),
@@ -582,6 +602,26 @@ export const usePulseStore = create<PulseStore>()(
       },
 
       stopRest: () => set({ rest: null }),
+
+      pauseRest: () => {
+        set((s) => {
+          if (!s.rest || s.rest.pausedRemainingMs != null) return {}
+          return { rest: { ...s.rest, pausedRemainingMs: Math.max(0, s.rest.endsAt - Date.now()) } }
+        })
+      },
+
+      resumeRest: () => {
+        set((s) => {
+          if (!s.rest || s.rest.pausedRemainingMs == null) return {}
+          return {
+            rest: {
+              ...s.rest,
+              endsAt: Date.now() + s.rest.pausedRemainingMs,
+              pausedRemainingMs: undefined,
+            },
+          }
+        })
+      },
     }),
     {
       name: 'pulse-store',

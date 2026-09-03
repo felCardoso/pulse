@@ -13,15 +13,17 @@ const STROKE = 4
 const RADIUS = (SIZE - STROKE) / 2
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS
 
-// Global, non-blocking rest-timer pill. State lives in the store, so the
-// countdown survives navigating to any tab (and even an app reload).
-// Mounted once in the (app) layout.
+// Global, non-blocking rest-timer pill (or, in Focus Mode, a full-screen
+// takeover). State lives in the store, so the countdown survives navigating
+// to any tab (and even an app reload). Mounted once in the (app) layout.
 export default function RestTimer() {
   const rest = usePulseStore((s) => s.rest)
   const stopRest = usePulseStore((s) => s.stopRest)
   const adjustRest = usePulseStore((s) => s.adjustRest)
+  const pauseRest = usePulseStore((s) => s.pauseRest)
+  const resumeRest = usePulseStore((s) => s.resumeRest)
   const activeSession = usePulseStore((s) => s.activeSession)
-  const restPauseMode = usePulseStore((s) => s.settings.restPauseMode)
+  const focusModeEnabled = usePulseStore((s) => s.settings.focusModeEnabled)
 
   const haptic = useHaptic()
   const sound = useSound()
@@ -29,9 +31,11 @@ export default function RestTimer() {
   const endedRef = useRef(false)
 
   const endsAt = rest?.endsAt
+  const isRestPause = rest?.isRestPause
+  const isPaused = rest?.pausedRemainingMs != null
 
   useEffect(() => {
-    if (!endsAt) return
+    if (!endsAt || isPaused) return
 
     // Stale entry from a previous visit (e.g. app reopened long after the
     // rest ended): clear silently, without end-of-rest feedback.
@@ -48,7 +52,7 @@ export default function RestTimer() {
       if (endedRef.current) return
       endedRef.current = true
       // Rest-Pause: silent — a short double buzz instead of the alarm sound.
-      if (restPauseMode) {
+      if (isRestPause) {
         haptic.restPauseEnd()
       } else {
         haptic.restEnd()
@@ -85,11 +89,13 @@ export default function RestTimer() {
       clearTimeout(timeout)
       document.removeEventListener('visibilitychange', onVisible)
     }
-  }, [endsAt]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [endsAt, isPaused]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!rest) return null
 
-  const timeLeft = Math.max(0, Math.ceil((rest.endsAt - now) / 1000))
+  const timeLeft = isPaused
+    ? Math.ceil((rest.pausedRemainingMs as number) / 1000)
+    : Math.max(0, Math.ceil((rest.endsAt - now) / 1000))
   const progress = rest.totalSeconds > 0 ? timeLeft / rest.totalSeconds : 0
   const strokeDashoffset = CIRCUMFERENCE * (1 - Math.min(1, progress))
 
@@ -105,6 +111,40 @@ export default function RestTimer() {
         : `${currentExercise.name} · série ${nextSet.setNumber}/${workingSetCount}`
       : currentExercise.name
     : undefined
+
+  // Focus Mode: the interface goes away entirely — just a black screen and
+  // a giant countdown. Tap the number to pause/resume, tap anywhere else
+  // for +10s.
+  if (focusModeEnabled) {
+    return (
+      <div
+        className="fixed inset-0 z-[80] flex flex-col items-center justify-center bg-black"
+        onClick={() => adjustRest(10)}
+      >
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            if (isPaused) resumeRest()
+            else pauseRest()
+          }}
+          className="flex flex-col items-center gap-3 px-8 py-6"
+        >
+          <span className="font-heading text-[5rem] font-bold leading-none tabular-nums text-primary sm:text-[7rem]">
+            {formatRestTime(timeLeft)}
+          </span>
+          <span className="text-[11px] uppercase tracking-widest text-white/40">
+            {isPaused ? 'pausado · toque para retomar' : 'toque para pausar'}
+          </span>
+        </button>
+        {nextLabel && (
+          <p className="mt-2 text-sm text-white/40">
+            Próxima: <span className="text-white/70">{nextLabel}</span>
+          </p>
+        )}
+        <p className="absolute bottom-10 text-[11px] text-white/25">Toque na tela · +10s</p>
+      </div>
+    )
+  }
 
   return (
     <div
@@ -146,7 +186,7 @@ export default function RestTimer() {
 
           <div className="min-w-0 flex-1">
             <p className="text-xs font-medium text-muted-foreground">
-              {restPauseMode ? 'Rest-Pause · silencioso' : 'Descansando'}
+              {isRestPause ? 'Rest-Pause · silencioso' : 'Descansando'}
             </p>
             {nextLabel && (
               <p className="truncate text-xs text-foreground">

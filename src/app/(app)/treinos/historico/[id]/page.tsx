@@ -62,6 +62,7 @@ export default function SessaoDetailPage() {
         warmupEnabled: ex.warmupEnabled,
         warmupPercent: ex.warmupPercent,
         progression: ex.progression,
+        restPauseEnabled: ex.restPauseEnabled,
       })),
     })
     setSavedAsTemplate(true)

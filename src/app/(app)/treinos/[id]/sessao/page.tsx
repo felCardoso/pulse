@@ -38,8 +38,8 @@ export default function SessaoPage() {
     )
   }
 
-  const handleSetDone = (seconds: number) => {
-    startRest(seconds)
+  const handleSetDone = (seconds: number, isRestPause?: boolean) => {
+    startRest(seconds, isRestPause)
   }
 
   const handleFinish = () => {

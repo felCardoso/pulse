@@ -17,7 +17,7 @@ interface Props {
   exercise: SessionExercise
   isCurrentExercise: boolean
   weightUnit: 'kg' | 'lbs'
-  onSetDone: (restSeconds: number) => void
+  onSetDone: (restSeconds: number, isRestPause?: boolean) => void
 }
 
 export default function ExerciseTracker({
@@ -69,9 +69,14 @@ export default function ExerciseTracker({
   const hintWeight = lastDone?.weight ?? auto?.weight ?? prev?.weight
   const hintReps = lastDone?.reps ?? auto?.reps ?? prev?.reps
 
-  const handleSetComplete = (setId: string, weight: number | undefined, reps: number | undefined) => {
+  const handleSetComplete = (
+    setId: string,
+    weight: number | undefined,
+    reps: number | undefined,
+    rir: number | undefined
+  ) => {
     unlockAudio()
-    const isPR = completeSet(exercise.id, setId, weight, reps)
+    const isPR = completeSet(exercise.id, setId, weight, reps, rir)
     if (isPR) {
       haptic.pr()
       sound.pr()
@@ -79,7 +84,7 @@ export default function ExerciseTracker({
       haptic.success()
       sound.setDone()
     }
-    onSetDone(exercise.restSeconds)
+    onSetDone(exercise.restSeconds, exercise.restPauseEnabled)
   }
 
   const handleTimeComplete = () => {
@@ -104,7 +109,9 @@ export default function ExerciseTracker({
     ? `${exercise.plannedDurationMinutes ?? '—'} min`
     : `${exercise.plannedSets}×${exercise.plannedReps}` +
       (exercise.bodyweight ? ' · peso corporal' : '') +
-      (exercise.restSeconds > 0
+      (exercise.restPauseEnabled
+        ? ' · Rest-Pause'
+        : exercise.restSeconds > 0
         ? ` · ${exercise.restSeconds >= 60 ? `${Math.floor(exercise.restSeconds / 60)}min` : `${exercise.restSeconds}s`} descanso`
         : '')
 
@@ -225,7 +232,7 @@ export default function ExerciseTracker({
                   previousWeight={hintWeight}
                   previousReps={hintReps}
                   bodyweight={exercise.bodyweight}
-                  onComplete={(w, r) => handleSetComplete(set.id, w, r)}
+                  onComplete={(w, r, rir) => handleSetComplete(set.id, w, r, rir)}
                 />
               ))}
             </>
