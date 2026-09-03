@@ -23,18 +23,16 @@ export default function ClearDataDialog({ onCancel, onConfirm, onBackup }: Props
 
   const templates = usePulseStore((s) => s.templates.length)
   const sessions = usePulseStore((s) => s.sessions.length)
-  const foods = usePulseStore((s) => s.foods.length)
-  const meals = usePulseStore((s) => s.dailyMacroLogs.length)
   const measurements = usePulseStore((s) => s.bodyMeasurements.length)
   const photos = usePulseStore((s) => s.progressPhotos.length)
+  const habits = usePulseStore((s) => s.habits.length)
 
   const dataSummary = [
     templates > 0 && `${templates} treino${templates !== 1 ? 's' : ''}`,
     sessions > 0 && `${sessions} sess${sessions !== 1 ? 'ões' : 'ão'}`,
-    foods > 0 && `${foods} alimento${foods !== 1 ? 's' : ''}`,
-    meals > 0 && `${meals} refei${meals !== 1 ? 'ções' : 'ção'}`,
     measurements > 0 && `${measurements} medi${measurements !== 1 ? 'ções' : 'ção'}`,
     photos > 0 && `${photos} foto${photos !== 1 ? 's' : ''}`,
+    habits > 0 && `${habits} rotina${habits !== 1 ? 's' : ''}`,
   ].filter(Boolean) as string[]
 
   const hasData = dataSummary.length > 0

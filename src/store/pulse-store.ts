@@ -10,9 +10,6 @@ import type {
   SessionExercise,
   PersonalRecord,
   AppSettings,
-  MacroFood,
-  DailyMacroLog,
-  MacroTargets,
   BodyMeasurement,
   ProgressPhoto,
   Habit,
@@ -51,11 +48,6 @@ interface PulseStore {
   personalRecords: Record<string, PersonalRecord>
   settings: AppSettings
 
-  // Macros
-  foods: MacroFood[]
-  dailyMacroLogs: DailyMacroLog[]
-  macroTargets: MacroTargets
-
   // Body progress
   bodyMeasurements: BodyMeasurement[]
   weightGoalKg: number | null
@@ -92,15 +84,6 @@ interface PulseStore {
 
   // Settings
   updateSettings: (data: Partial<AppSettings>) => void
-
-  // Macros actions
-  addFood: (food: Omit<MacroFood, 'id' | 'lastUsedAt'>) => MacroFood
-  updateFood: (id: string, data: Partial<MacroFood>) => void
-  deleteFood: (id: string) => void
-  logMeal: (foodId: string, gramsConsumed: number, time?: string) => DailyMacroLog | null
-  getDayTotals: (date?: string) => { kcal: number; protein: number; carbs: number; fat: number; logs: DailyMacroLog[] }
-  cleanupOldFoods: () => void
-  updateMacroTargets: (data: Partial<MacroTargets>) => void
 
   // Body progress actions
   addBodyMeasurement: (data: Omit<BodyMeasurement, 'id'>) => BodyMeasurement
@@ -181,9 +164,6 @@ export const usePulseStore = create<PulseStore>()(
       activeSession: null,
       personalRecords: {},
       settings: DEFAULT_SETTINGS,
-      foods: [],
-      dailyMacroLogs: [],
-      macroTargets: { kcal: 2900, protein: 230, carbs: 290, fat: 97 },
       bodyMeasurements: [],
       weightGoalKg: null,
       progressPhotos: [],
@@ -396,97 +376,6 @@ export const usePulseStore = create<PulseStore>()(
         return state.sessions.filter(
           (s) => s.status === 'completed' && new Date(s.startedAt).getTime() >= weekStart
         )
-      },
-
-      addFood: (data) => {
-        const food: MacroFood = {
-          ...data,
-          id: uuid(),
-        }
-        set((s) => ({ foods: [...s.foods, food] }))
-        return food
-      },
-
-      updateFood: (id, data) => {
-        set((s) => ({
-          foods: s.foods.map((f) =>
-            f.id === id ? { ...f, ...data, lastUsedAt: f.lastUsedAt } : f
-          ),
-        }))
-      },
-
-      deleteFood: (id) => {
-        set((s) => ({ foods: s.foods.filter((f) => f.id !== id) }))
-      },
-
-      logMeal: (foodId, gramsConsumed, time) => {
-        const state = get()
-        const food = state.foods.find((f) => f.id === foodId)
-        if (!food) return null
-
-        const kcal = Math.round((food.kcalPer100g * gramsConsumed) / 100)
-        const protein = Math.round((food.proteinPer100g * gramsConsumed) / 100 * 10) / 10
-        const carbs = Math.round((food.carbsPer100g * gramsConsumed) / 100 * 10) / 10
-        const fat = Math.round((food.fatPer100g * gramsConsumed) / 100 * 10) / 10
-
-        // Optional "HH:MM" sets the meal's time (today's date is kept).
-        const when = new Date()
-        if (time) {
-          const [h, m] = time.split(':').map(Number)
-          if (Number.isFinite(h) && Number.isFinite(m) && h >= 0 && h < 24 && m >= 0 && m < 60) {
-            when.setHours(h, m, 0, 0)
-          }
-        }
-
-        const log: DailyMacroLog = {
-          id: uuid(),
-          date: new Date().toISOString().split('T')[0],
-          foodId,
-          foodName: food.name,
-          gramsConsumed,
-          kcal,
-          protein,
-          carbs,
-          fat,
-          timestamp: when.toISOString(),
-        }
-
-        set((s) => ({
-          dailyMacroLogs: [...s.dailyMacroLogs, log],
-          foods: s.foods.map((f) =>
-            f.id === foodId ? { ...f, lastUsedAt: new Date().toISOString() } : f
-          ),
-        }))
-
-        return log
-      },
-
-      getDayTotals: (date) => {
-        const state = get()
-        const targetDate = date || new Date().toISOString().split('T')[0]
-        const logs = state.dailyMacroLogs.filter((l) => l.date === targetDate)
-
-        return {
-          kcal: logs.reduce((acc, l) => acc + l.kcal, 0),
-          protein: Math.round(logs.reduce((acc, l) => acc + l.protein, 0) * 10) / 10,
-          carbs: Math.round(logs.reduce((acc, l) => acc + l.carbs, 0) * 10) / 10,
-          fat: Math.round(logs.reduce((acc, l) => acc + l.fat, 0) * 10) / 10,
-          logs,
-        }
-      },
-
-      cleanupOldFoods: () => {
-        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-
-        set((s) => ({
-          foods: s.foods.filter(
-            (f) => !f.lastUsedAt || f.lastUsedAt > thirtyDaysAgo
-          ),
-        }))
-      },
-
-      updateMacroTargets: (data) => {
-        set((s) => ({ macroTargets: { ...s.macroTargets, ...data } }))
       },
 
       addBodyMeasurement: (data) => {

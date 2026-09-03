@@ -3,9 +3,6 @@ import type {
   WorkoutSession,
   PersonalRecord,
   AppSettings,
-  MacroFood,
-  DailyMacroLog,
-  MacroTargets,
   BodyMeasurement,
   ProgressPhoto,
   Habit,
@@ -19,9 +16,6 @@ interface BackupData {
   personalRecords: Record<string, PersonalRecord>
   settings: AppSettings
   // v2 fields (optional so v1 backups still import)
-  foods?: MacroFood[]
-  dailyMacroLogs?: DailyMacroLog[]
-  macroTargets?: MacroTargets
   bodyMeasurements?: BodyMeasurement[]
   weightGoalKg?: number | null
   progressPhotos?: ProgressPhoto[]
@@ -58,9 +52,6 @@ export function parseBackup(json: string): BackupPayload {
     sessions: data.sessions ?? [],
     personalRecords: data.personalRecords ?? {},
     settings: data.settings ?? {},
-    foods: data.foods ?? [],
-    dailyMacroLogs: data.dailyMacroLogs ?? [],
-    macroTargets: data.macroTargets,
     bodyMeasurements: data.bodyMeasurements ?? [],
     weightGoalKg: data.weightGoalKg ?? null,
     progressPhotos: data.progressPhotos ?? [],

@@ -1,13 +1,12 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { Download, Upload, Trash2, Palette, Dumbbell, Apple, TrendingUp, Database } from 'lucide-react'
+import { Download, Upload, Trash2, Palette, Dumbbell, TrendingUp, Database } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { usePulseStore } from '@/store/pulse-store'
 import { exportBackup, parseBackup } from '@/lib/backup'
-import SavedFoodsManager from '@/components/macros/SavedFoodsManager'
 import ClearDataDialog from '@/components/settings/ClearDataDialog'
 
 const REST_OPTIONS = [
@@ -18,12 +17,11 @@ const REST_OPTIONS = [
   { label: '3min', value: 180 },
 ]
 
-type Tab = 'geral' | 'treino' | 'nutricao' | 'progresso' | 'dados'
+type Tab = 'geral' | 'treino' | 'progresso' | 'dados'
 
 const TABS: { key: Tab; label: string; icon: typeof Palette }[] = [
   { key: 'geral', label: 'Geral', icon: Palette },
   { key: 'treino', label: 'Treino', icon: Dumbbell },
-  { key: 'nutricao', label: 'Nutrição', icon: Apple },
   { key: 'progresso', label: 'Progresso', icon: TrendingUp },
   { key: 'dados', label: 'Dados', icon: Database },
 ]
@@ -34,9 +32,6 @@ export default function ConfiguracoesPage() {
   const templates = usePulseStore((s) => s.templates)
   const sessions = usePulseStore((s) => s.sessions)
   const personalRecords = usePulseStore((s) => s.personalRecords)
-  const foods = usePulseStore((s) => s.foods)
-  const dailyMacroLogs = usePulseStore((s) => s.dailyMacroLogs)
-  const macroTargets = usePulseStore((s) => s.macroTargets)
   const bodyMeasurements = usePulseStore((s) => s.bodyMeasurements)
   const weightGoalKg = usePulseStore((s) => s.weightGoalKg)
   const progressPhotos = usePulseStore((s) => s.progressPhotos)
@@ -59,9 +54,6 @@ export default function ConfiguracoesPage() {
       sessions,
       personalRecords,
       settings,
-      foods,
-      dailyMacroLogs,
-      macroTargets,
       bodyMeasurements,
       weightGoalKg,
       progressPhotos,
@@ -84,9 +76,6 @@ export default function ConfiguracoesPage() {
           sessions: data.sessions,
           personalRecords: data.personalRecords,
           settings: { ...settings, ...data.settings },
-          foods: data.foods ?? [],
-          dailyMacroLogs: data.dailyMacroLogs ?? [],
-          ...(data.macroTargets && { macroTargets: data.macroTargets }),
           bodyMeasurements: data.bodyMeasurements ?? [],
           weightGoalKg: data.weightGoalKg ?? null,
           progressPhotos: data.progressPhotos ?? [],
@@ -108,8 +97,6 @@ export default function ConfiguracoesPage() {
       sessions: [],
       activeSession: null,
       personalRecords: {},
-      foods: [],
-      dailyMacroLogs: [],
       bodyMeasurements: [],
       weightGoalKg: null,
       progressPhotos: [],
@@ -267,21 +254,6 @@ export default function ConfiguracoesPage() {
           </section>
           <p className="text-xs text-muted-foreground">
             A agenda semanal de treinos agora fica na aba Treinos.
-          </p>
-        </div>
-      )}
-
-      {/* ─── Nutrição ─── */}
-      {tab === 'nutricao' && (
-        <div className="space-y-6">
-          <section className="space-y-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Alimentos Salvos
-            </h2>
-            <SavedFoodsManager />
-          </section>
-          <p className="text-xs text-muted-foreground">
-            As metas de calorias e macros são definidas na aba Macros (botão de perfil).
           </p>
         </div>
       )}

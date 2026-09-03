@@ -19,7 +19,7 @@ const spaceGrotesk = Space_Grotesk({
 
 export const metadata: Metadata = {
   title: 'Loop',
-  description: 'Acompanhe seus treinos, macros e rotinas.',
+  description: 'Acompanhe seus treinos, rotinas e progresso.',
   manifest: '/manifest.json',
   icons: {
     icon: [
