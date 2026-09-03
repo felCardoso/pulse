@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect } from 'react'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 
 export default function StoreHydration() {
   useEffect(() => {
-    usePulseStore.persist.rehydrate()
+    useEchoStore.persist.rehydrate()
   }, [])
   return null
 }

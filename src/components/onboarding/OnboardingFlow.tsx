@@ -2,60 +2,34 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Zap, Dumbbell, Flame, TrendingUp, WifiOff, ChevronLeft, Plus, Check } from 'lucide-react'
+import { Disc, Dumbbell, Repeat, TrendingUp, WifiOff, ChevronLeft, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { usePulseStore } from '@/store/pulse-store'
-
-type Goal = 'cutting' | 'maintain' | 'bulking'
-
-const GOALS: { key: Goal; label: string; description: string }[] = [
-  { key: 'cutting', label: 'Perder gordura', description: 'Déficit calórico (cutting)' },
-  { key: 'maintain', label: 'Manter', description: 'Manutenção do peso atual' },
-  { key: 'bulking', label: 'Ganhar massa', description: 'Superávit calórico (bulking)' },
-]
-
-// Rough starting targets from body weight: 2g/kg protein, 0.9g/kg fat,
-// ~33 kcal/kg maintenance adjusted by goal; carbs fill the rest.
-function suggestMacros(weightKg: number, goal: Goal) {
-  const factor = goal === 'cutting' ? 0.85 : goal === 'bulking' ? 1.1 : 1
-  const kcal = Math.round((weightKg * 33 * factor) / 10) * 10
-  const protein = Math.round(weightKg * 2)
-  const fat = Math.round(weightKg * 0.9)
-  const carbs = Math.max(0, Math.round((kcal - protein * 4 - fat * 9) / 4))
-  return { kcal, protein, carbs, fat }
-}
+import { useEchoStore } from '@/store/echo-store'
+import { useStoreHydrated } from '@/hooks/useStoreHydrated'
+import { getLocalDateStr } from '@/utils/format'
 
 export default function OnboardingFlow() {
   const router = useRouter()
 
-  const onboardingCompleted = usePulseStore((s) => s.onboardingCompleted)
-  const completeOnboarding = usePulseStore((s) => s.completeOnboarding)
-  const updateMacroTargets = usePulseStore((s) => s.updateMacroTargets)
-  const addBodyMeasurement = usePulseStore((s) => s.addBodyMeasurement)
-  const setWeightGoal = usePulseStore((s) => s.setWeightGoal)
-  const macroTargets = usePulseStore((s) => s.macroTargets)
+  const onboardingCompleted = useEchoStore((s) => s.onboardingCompleted)
+  const completeOnboarding = useEchoStore((s) => s.completeOnboarding)
+  const addBodyMeasurement = useEchoStore((s) => s.addBodyMeasurement)
+  const setWeightGoal = useEchoStore((s) => s.setWeightGoal)
 
   // Anything already in the store means this isn't a first launch.
-  const hasData = usePulseStore(
+  const hasData = useEchoStore(
     (s) =>
       s.templates.length > 0 ||
       s.sessions.length > 0 ||
-      s.dailyMacroLogs.length > 0 ||
+      s.habits.length > 0 ||
       s.bodyMeasurements.length > 0
   )
 
   // Wait for localStorage hydration so existing users never see a flash.
   // persist API is unavailable during SSR/prerender — only touch it in
   // an effect (this is what broke the Vercel build when accessed in render).
-  const [hydrated, setHydrated] = useState(false)
-  useEffect(() => {
-    if (usePulseStore.persist?.hasHydrated()) {
-      setHydrated(true)
-      return
-    }
-    return usePulseStore.persist?.onFinishHydration(() => setHydrated(true))
-  }, [])
+  const hydrated = useStoreHydrated()
 
   // Existing users (data present but flag missing) skip silently.
   useEffect(() => {
@@ -63,35 +37,18 @@ export default function OnboardingFlow() {
   }, [hydrated, onboardingCompleted, hasData, completeOnboarding])
 
   const [step, setStep] = useState(0)
-  const [goal, setGoal] = useState<Goal>('maintain')
   const [weight, setWeight] = useState('')
   const [targetWeight, setTargetWeight] = useState('')
-  const [kcal, setKcal] = useState(String(macroTargets.kcal))
-  const [protein, setProtein] = useState(String(macroTargets.protein))
-  const [carbs, setCarbs] = useState(String(macroTargets.carbs))
-  const [fat, setFat] = useState(String(macroTargets.fat))
 
   if (!hydrated || onboardingCompleted || hasData) return null
 
   const weightNum = parseFloat(weight)
   const hasWeight = weight !== '' && !isNaN(weightNum) && weightNum > 0
 
-  const goToMacros = () => {
-    // Pre-fill macro targets from weight + goal when available.
-    if (hasWeight) {
-      const s = suggestMacros(weightNum, goal)
-      setKcal(String(s.kcal))
-      setProtein(String(s.protein))
-      setCarbs(String(s.carbs))
-      setFat(String(s.fat))
-    }
-    setStep(2)
-  }
-
   const finish = (createWorkout: boolean) => {
     if (hasWeight) {
       addBodyMeasurement({
-        date: new Date().toISOString().split('T')[0],
+        date: getLocalDateStr(),
         weightKg: Math.round(weightNum * 10) / 10,
       })
     }
@@ -99,16 +56,6 @@ export default function OnboardingFlow() {
     if (targetWeight !== '' && !isNaN(goalNum) && goalNum > 0) {
       setWeightGoal(Math.round(goalNum * 10) / 10)
     }
-    const parse = (v: string, fallback: number) => {
-      const n = parseFloat(v)
-      return !isNaN(n) && n > 0 ? n : fallback
-    }
-    updateMacroTargets({
-      kcal: Math.round(parse(kcal, macroTargets.kcal)),
-      protein: parse(protein, macroTargets.protein),
-      carbs: parse(carbs, macroTargets.carbs),
-      fat: parse(fat, macroTargets.fat),
-    })
     completeOnboarding()
     if (createWorkout) router.push('/treinos/novo')
   }
@@ -132,7 +79,7 @@ export default function OnboardingFlow() {
             <div className="h-8 w-8" />
           )}
           <div className="flex gap-1.5">
-            {[0, 1, 2, 3].map((i) => (
+            {[0, 1, 2].map((i) => (
               <span
                 key={i}
                 className={cn(
@@ -154,20 +101,20 @@ export default function OnboardingFlow() {
         {step === 0 && (
           <div className="flex flex-1 flex-col justify-center gap-8">
             <div className="flex flex-col items-center gap-4 text-center">
-              <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/15">
-                <Zap className="h-10 w-10 text-primary" />
+              <div className="flex h-20 w-20 items-center justify-center rounded-[22px] bg-[#1e293b]">
+                <Disc className="h-14 w-14 text-primary" strokeWidth={2} />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Bem-vindo ao Pulse</h1>
+                <h1 className="font-heading text-2xl font-bold text-foreground">Bem-vindo ao Echo</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Treino, macros e progresso corporal em um só lugar
+                  Treino, rotinas e progresso corporal em um só lugar
                 </p>
               </div>
             </div>
             <div className="space-y-3">
               {[
                 { icon: Dumbbell, text: 'Registre treinos com 1 toque por série' },
-                { icon: Flame, text: 'Acompanhe calorias e macros do dia' },
+                { icon: Repeat, text: 'Transforme hábitos em rotina em 30 dias' },
                 { icon: TrendingUp, text: 'Veja sua evolução: peso, cargas e recordes' },
                 { icon: WifiOff, text: '100% offline — seus dados ficam no aparelho' },
               ].map(({ icon: Icon, text }) => (
@@ -183,34 +130,14 @@ export default function OnboardingFlow() {
           </div>
         )}
 
-        {/* Step 1 — Goal + weight */}
+        {/* Step 1 — Weight */}
         {step === 1 && (
           <div className="flex flex-1 flex-col justify-center gap-6">
             <div>
-              <h2 className="text-xl font-bold text-foreground">Qual é o seu objetivo?</h2>
+              <h2 className="text-xl font-bold text-foreground">Seu peso atual</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Usamos isso para sugerir suas metas de calorias
+                Opcional — dá para registrar depois na aba Progresso
               </p>
-            </div>
-            <div className="space-y-2">
-              {GOALS.map((g) => (
-                <button
-                  key={g.key}
-                  onClick={() => setGoal(g.key)}
-                  className={cn(
-                    'flex w-full items-center justify-between rounded-xl border-2 px-4 py-3.5 text-left transition-colors',
-                    goal === g.key
-                      ? 'border-primary bg-primary/10'
-                      : 'border-border bg-card hover:border-primary/40'
-                  )}
-                >
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">{g.label}</p>
-                    <p className="text-xs text-muted-foreground">{g.description}</p>
-                  </div>
-                  {goal === g.key && <Check className="h-4 w-4 text-primary" />}
-                </button>
-              ))}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -242,75 +169,14 @@ export default function OnboardingFlow() {
                 />
               </div>
             </div>
-            <Button size="lg" className="w-full" onClick={goToMacros}>
+            <Button size="lg" className="w-full" onClick={() => setStep(2)}>
               Continuar
             </Button>
           </div>
         )}
 
-        {/* Step 2 — Macro targets */}
+        {/* Step 2 — First workout */}
         {step === 2 && (
-          <div className="flex flex-1 flex-col justify-center gap-6">
-            <div>
-              <h2 className="text-xl font-bold text-foreground">Metas diárias</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {hasWeight
-                  ? 'Sugeridas a partir do seu peso e objetivo — ajuste como quiser'
-                  : 'Ajuste suas metas de calorias e macros (dá para mudar depois)'}
-              </p>
-            </div>
-            <div className="space-y-3">
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Calorias (kcal)</label>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  value={kcal}
-                  onChange={(e) => setKcal(e.target.value)}
-                  className={cn(inputClass, 'text-lg font-semibold')}
-                />
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Proteína (g)</label>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    value={protein}
-                    onChange={(e) => setProtein(e.target.value)}
-                    className={inputClass}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Carbs (g)</label>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    value={carbs}
-                    onChange={(e) => setCarbs(e.target.value)}
-                    className={inputClass}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Gordura (g)</label>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    value={fat}
-                    onChange={(e) => setFat(e.target.value)}
-                    className={inputClass}
-                  />
-                </div>
-              </div>
-            </div>
-            <Button size="lg" className="w-full" onClick={() => setStep(3)}>
-              Continuar
-            </Button>
-          </div>
-        )}
-
-        {/* Step 3 — First workout */}
-        {step === 3 && (
           <div className="flex flex-1 flex-col justify-center gap-6">
             <div className="flex flex-col items-center gap-4 text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/15">

@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { X, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
+import { getLocalDateStr } from '@/utils/format'
 
 interface Props {
   onClose: () => void
@@ -23,10 +24,10 @@ const BIO_FIELDS: BioField[] = [
 ]
 
 export default function MeasurementSheet({ onClose }: Props) {
-  const addBodyMeasurement = usePulseStore((s) => s.addBodyMeasurement)
-  const bioimpedance = usePulseStore((s) => !!s.settings.bioimpedance)
-  const weightUnit = usePulseStore((s) => s.settings.weightUnit)
-  const lastMeasurement = usePulseStore((s) => s.bodyMeasurements[s.bodyMeasurements.length - 1])
+  const addBodyMeasurement = useEchoStore((s) => s.addBodyMeasurement)
+  const bioimpedance = useEchoStore((s) => !!s.settings.bioimpedance)
+  const weightUnit = useEchoStore((s) => s.settings.weightUnit)
+  const lastMeasurement = useEchoStore((s) => s.bodyMeasurements[s.bodyMeasurements.length - 1])
 
   const [weight, setWeight] = useState('')
   const [bio, setBio] = useState<Record<BioField['key'], string>>({
@@ -48,7 +49,7 @@ export default function MeasurementSheet({ onClose }: Props) {
     }
 
     addBodyMeasurement({
-      date: new Date().toISOString().split('T')[0],
+      date: getLocalDateStr(),
       weightKg: Math.round(weightNum * 10) / 10,
       ...(bioimpedance && {
         bodyFatPct: parseOptional(bio.bodyFatPct),

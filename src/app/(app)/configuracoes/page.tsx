@@ -1,13 +1,13 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { Download, Upload, Trash2, Palette, Dumbbell, Apple, TrendingUp, Database } from 'lucide-react'
+import Link from 'next/link'
+import { Download, Upload, Trash2, Palette, Dumbbell, TrendingUp, Database, ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 import { exportBackup, parseBackup } from '@/lib/backup'
-import SavedFoodsManager from '@/components/macros/SavedFoodsManager'
 import ClearDataDialog from '@/components/settings/ClearDataDialog'
 
 const REST_OPTIONS = [
@@ -18,29 +18,26 @@ const REST_OPTIONS = [
   { label: '3min', value: 180 },
 ]
 
-type Tab = 'geral' | 'treino' | 'nutricao' | 'progresso' | 'dados'
+type Tab = 'geral' | 'treino' | 'progresso' | 'dados'
 
 const TABS: { key: Tab; label: string; icon: typeof Palette }[] = [
   { key: 'geral', label: 'Geral', icon: Palette },
   { key: 'treino', label: 'Treino', icon: Dumbbell },
-  { key: 'nutricao', label: 'Nutrição', icon: Apple },
   { key: 'progresso', label: 'Progresso', icon: TrendingUp },
   { key: 'dados', label: 'Dados', icon: Database },
 ]
 
 export default function ConfiguracoesPage() {
-  const settings = usePulseStore((s) => s.settings)
-  const updateSettings = usePulseStore((s) => s.updateSettings)
-  const templates = usePulseStore((s) => s.templates)
-  const sessions = usePulseStore((s) => s.sessions)
-  const personalRecords = usePulseStore((s) => s.personalRecords)
-  const foods = usePulseStore((s) => s.foods)
-  const dailyMacroLogs = usePulseStore((s) => s.dailyMacroLogs)
-  const macroTargets = usePulseStore((s) => s.macroTargets)
-  const bodyMeasurements = usePulseStore((s) => s.bodyMeasurements)
-  const weightGoalKg = usePulseStore((s) => s.weightGoalKg)
-  const progressPhotos = usePulseStore((s) => s.progressPhotos)
-  const weeklySchedule = usePulseStore((s) => s.weeklySchedule)
+  const settings = useEchoStore((s) => s.settings)
+  const updateSettings = useEchoStore((s) => s.updateSettings)
+  const templates = useEchoStore((s) => s.templates)
+  const sessions = useEchoStore((s) => s.sessions)
+  const personalRecords = useEchoStore((s) => s.personalRecords)
+  const bodyMeasurements = useEchoStore((s) => s.bodyMeasurements)
+  const weightGoalKg = useEchoStore((s) => s.weightGoalKg)
+  const progressPhotos = useEchoStore((s) => s.progressPhotos)
+  const weeklySchedule = useEchoStore((s) => s.weeklySchedule)
+  const habits = useEchoStore((s) => s.habits)
   const importRef = useRef<HTMLInputElement>(null)
   const [importError, setImportError] = useState<string | null>(null)
   const [importSuccess, setImportSuccess] = useState(false)
@@ -58,13 +55,11 @@ export default function ConfiguracoesPage() {
       sessions,
       personalRecords,
       settings,
-      foods,
-      dailyMacroLogs,
-      macroTargets,
       bodyMeasurements,
       weightGoalKg,
       progressPhotos,
       weeklySchedule,
+      habits,
     })
   }
 
@@ -77,22 +72,20 @@ export default function ConfiguracoesPage() {
     reader.onload = (ev) => {
       try {
         const data = parseBackup(ev.target?.result as string)
-        usePulseStore.setState({
+        useEchoStore.setState({
           templates: data.templates,
           sessions: data.sessions,
           personalRecords: data.personalRecords,
           settings: { ...settings, ...data.settings },
-          foods: data.foods ?? [],
-          dailyMacroLogs: data.dailyMacroLogs ?? [],
-          ...(data.macroTargets && { macroTargets: data.macroTargets }),
           bodyMeasurements: data.bodyMeasurements ?? [],
           weightGoalKg: data.weightGoalKg ?? null,
           progressPhotos: data.progressPhotos ?? [],
           weeklySchedule: data.weeklySchedule ?? {},
+          habits: data.habits ?? [],
         })
         setImportSuccess(true)
       } catch {
-        setImportError('Arquivo inválido. Verifique se é um backup do Pulse.')
+        setImportError('Arquivo inválido. Verifique se é um backup do Echo.')
       }
     }
     reader.readAsText(file)
@@ -100,17 +93,16 @@ export default function ConfiguracoesPage() {
   }
 
   const handleClearData = () => {
-    usePulseStore.setState({
+    useEchoStore.setState({
       templates: [],
       sessions: [],
       activeSession: null,
       personalRecords: {},
-      foods: [],
-      dailyMacroLogs: [],
       bodyMeasurements: [],
       weightGoalKg: null,
       progressPhotos: [],
       weeklySchedule: {},
+      habits: [],
     })
     setShowClearDialog(false)
   }
@@ -137,7 +129,12 @@ export default function ConfiguracoesPage() {
 
   return (
     <div className="space-y-6 pb-8">
-      <h1 className="text-2xl font-bold text-foreground pt-2">Configurações</h1>
+      <div className="flex items-center gap-2 pt-2">
+        <Link href="/inicio" className="text-muted-foreground hover:text-foreground">
+          <ChevronLeft className="h-5 w-5" />
+        </Link>
+        <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
+      </div>
 
       {/* Theme tabs */}
       <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-4 px-4">
@@ -210,6 +207,44 @@ export default function ConfiguracoesPage() {
               </div>
             </div>
           </section>
+
+          <section className="space-y-3">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Notificações
+            </h2>
+            <div className="rounded-xl border border-border bg-card divide-y divide-border">
+              <div className="flex items-center justify-between px-4 py-3.5">
+                <div className="pr-3">
+                  <Label className="cursor-pointer">Treino do dia</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Lembrete do treino de hoje ao abrir o Início, se ainda não treinou.
+                  </p>
+                </div>
+                {switchButton(
+                  settings.workoutReminders,
+                  () => updateSettings({ workoutReminders: !settings.workoutReminders }),
+                  'Treino do dia'
+                )}
+              </div>
+              <div className="flex items-center justify-between px-4 py-3.5">
+                <div className="pr-3">
+                  <Label className="cursor-pointer">Rotinas pendentes</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Lembrete de rotinas do dia ainda não marcadas ao abrir a aba Rotina.
+                  </p>
+                </div>
+                {switchButton(
+                  settings.routineReminders,
+                  () => updateSettings({ routineReminders: !settings.routineReminders }),
+                  'Rotinas pendentes'
+                )}
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Essas notificações disparam no máximo 1x por dia, só enquanto o app está aberto —
+              não há aviso em segundo plano com o app fechado.
+            </p>
+          </section>
         </div>
       )}
 
@@ -261,23 +296,35 @@ export default function ConfiguracoesPage() {
               </div>
             </div>
           </section>
-          <p className="text-xs text-muted-foreground">
-            A agenda semanal de treinos agora fica na aba Treinos.
-          </p>
-        </div>
-      )}
 
-      {/* ─── Nutrição ─── */}
-      {tab === 'nutricao' && (
-        <div className="space-y-6">
           <section className="space-y-3">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Alimentos Salvos
+              Descanso
             </h2>
-            <SavedFoodsManager />
+            <div className="rounded-xl border border-border bg-card px-4 py-3.5">
+              <div className="flex items-center justify-between">
+                <div className="pr-3">
+                  <Label className="cursor-pointer">Modo Foco Absoluto</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Durante o descanso, a tela fica só preta com a contagem gigante em destaque.
+                    Toque no número pausa ou retoma; toque no resto da tela soma +10s.
+                  </p>
+                </div>
+                {switchButton(
+                  settings.focusModeEnabled,
+                  () => updateSettings({ focusModeEnabled: !settings.focusModeEnabled }),
+                  'Modo Foco Absoluto'
+                )}
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              O Rest-Pause (descanso curto e silencioso) agora é configurado por exercício,
+              ao montar o treino.
+            </p>
           </section>
+
           <p className="text-xs text-muted-foreground">
-            As metas de calorias e macros são definidas na aba Macros (botão de perfil).
+            A agenda semanal de treinos agora fica na aba Treinos.
           </p>
         </div>
       )}
@@ -350,7 +397,7 @@ export default function ConfiguracoesPage() {
           </section>
 
           <p className="text-center text-xs text-muted-foreground">
-            Pulse · {templates.length} treinos · {sessions.length} sessões
+            <span className="font-heading">Echo</span> · {templates.length} treinos · {sessions.length} sessões
           </p>
         </div>
       )}

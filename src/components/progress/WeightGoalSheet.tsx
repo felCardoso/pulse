@@ -3,17 +3,17 @@
 import { useState } from 'react'
 import { X, Check, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 
 interface Props {
   onClose: () => void
 }
 
 export default function WeightGoalSheet({ onClose }: Props) {
-  const weightGoalKg = usePulseStore((s) => s.weightGoalKg)
-  const setWeightGoal = usePulseStore((s) => s.setWeightGoal)
-  const weightUnit = usePulseStore((s) => s.settings.weightUnit)
-  const latest = usePulseStore((s) => s.bodyMeasurements[s.bodyMeasurements.length - 1])
+  const weightGoalKg = useEchoStore((s) => s.weightGoalKg)
+  const setWeightGoal = useEchoStore((s) => s.setWeightGoal)
+  const weightUnit = useEchoStore((s) => s.settings.weightUnit)
+  const latest = useEchoStore((s) => s.bodyMeasurements[s.bodyMeasurements.length - 1])
 
   const [goal, setGoal] = useState(weightGoalKg != null ? String(weightGoalKg) : '')
 

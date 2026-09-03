@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AlertTriangle, Download, Trash2, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 
 interface Props {
   onCancel: () => void
@@ -21,20 +21,18 @@ export default function ClearDataDialog({ onCancel, onConfirm, onBackup }: Props
   const [typed, setTyped] = useState('')
   const [backedUp, setBackedUp] = useState(false)
 
-  const templates = usePulseStore((s) => s.templates.length)
-  const sessions = usePulseStore((s) => s.sessions.length)
-  const foods = usePulseStore((s) => s.foods.length)
-  const meals = usePulseStore((s) => s.dailyMacroLogs.length)
-  const measurements = usePulseStore((s) => s.bodyMeasurements.length)
-  const photos = usePulseStore((s) => s.progressPhotos.length)
+  const templates = useEchoStore((s) => s.templates.length)
+  const sessions = useEchoStore((s) => s.sessions.length)
+  const measurements = useEchoStore((s) => s.bodyMeasurements.length)
+  const photos = useEchoStore((s) => s.progressPhotos.length)
+  const habits = useEchoStore((s) => s.habits.length)
 
   const dataSummary = [
     templates > 0 && `${templates} treino${templates !== 1 ? 's' : ''}`,
     sessions > 0 && `${sessions} sess${sessions !== 1 ? 'ões' : 'ão'}`,
-    foods > 0 && `${foods} alimento${foods !== 1 ? 's' : ''}`,
-    meals > 0 && `${meals} refei${meals !== 1 ? 'ções' : 'ção'}`,
     measurements > 0 && `${measurements} medi${measurements !== 1 ? 'ções' : 'ção'}`,
     photos > 0 && `${photos} foto${photos !== 1 ? 's' : ''}`,
+    habits > 0 && `${habits} rotina${habits !== 1 ? 's' : ''}`,
   ].filter(Boolean) as string[]
 
   const hasData = dataSummary.length > 0

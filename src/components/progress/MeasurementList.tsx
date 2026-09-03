@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Trash2, TrendingDown, TrendingUp, Minus } from 'lucide-react'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 import ConfirmDialog from '@/components/ui/confirm-dialog'
 import type { BodyMeasurement } from '@/types'
 
@@ -12,10 +12,10 @@ function formatDateBR(date: string): string {
 }
 
 export default function MeasurementList() {
-  const bodyMeasurements = usePulseStore((s) => s.bodyMeasurements)
-  const deleteBodyMeasurement = usePulseStore((s) => s.deleteBodyMeasurement)
-  const bioimpedance = usePulseStore((s) => !!s.settings.bioimpedance)
-  const weightUnit = usePulseStore((s) => s.settings.weightUnit)
+  const bodyMeasurements = useEchoStore((s) => s.bodyMeasurements)
+  const deleteBodyMeasurement = useEchoStore((s) => s.deleteBodyMeasurement)
+  const bioimpedance = useEchoStore((s) => !!s.settings.bioimpedance)
+  const weightUnit = useEchoStore((s) => s.settings.weightUnit)
   const [deleting, setDeleting] = useState<BodyMeasurement | null>(null)
 
   if (bodyMeasurements.length === 0) return null

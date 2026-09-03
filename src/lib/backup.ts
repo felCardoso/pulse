@@ -3,12 +3,11 @@ import type {
   WorkoutSession,
   PersonalRecord,
   AppSettings,
-  MacroFood,
-  DailyMacroLog,
-  MacroTargets,
   BodyMeasurement,
   ProgressPhoto,
+  Habit,
 } from '@/types'
+import { getLocalDateStr } from '@/utils/format'
 
 interface BackupData {
   version: number
@@ -18,13 +17,11 @@ interface BackupData {
   personalRecords: Record<string, PersonalRecord>
   settings: AppSettings
   // v2 fields (optional so v1 backups still import)
-  foods?: MacroFood[]
-  dailyMacroLogs?: DailyMacroLog[]
-  macroTargets?: MacroTargets
   bodyMeasurements?: BodyMeasurement[]
   weightGoalKg?: number | null
   progressPhotos?: ProgressPhoto[]
   weeklySchedule?: Record<string, string>
+  habits?: Habit[]
 }
 
 export type BackupPayload = Omit<BackupData, 'version' | 'exportedAt'>
@@ -39,7 +36,7 @@ export function exportBackup(data: BackupPayload) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `pulse-backup-${new Date().toISOString().split('T')[0]}.json`
+  a.download = `echo-backup-${getLocalDateStr()}.json`
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
@@ -56,12 +53,10 @@ export function parseBackup(json: string): BackupPayload {
     sessions: data.sessions ?? [],
     personalRecords: data.personalRecords ?? {},
     settings: data.settings ?? {},
-    foods: data.foods ?? [],
-    dailyMacroLogs: data.dailyMacroLogs ?? [],
-    macroTargets: data.macroTargets,
     bodyMeasurements: data.bodyMeasurements ?? [],
     weightGoalKg: data.weightGoalKg ?? null,
     progressPhotos: data.progressPhotos ?? [],
     weeklySchedule: data.weeklySchedule ?? {},
+    habits: data.habits ?? [],
   }
 }

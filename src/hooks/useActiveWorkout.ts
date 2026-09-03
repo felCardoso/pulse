@@ -1,14 +1,14 @@
 'use client'
 
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 
 export function useActiveWorkout() {
-  const activeSession = usePulseStore((s) => s.activeSession)
-  const completeSet = usePulseStore((s) => s.completeSet)
-  const updateActiveSession = usePulseStore((s) => s.updateActiveSession)
-  const finishWorkout = usePulseStore((s) => s.finishWorkout)
-  const cancelWorkout = usePulseStore((s) => s.cancelWorkout)
-  const addExerciseToActiveSession = usePulseStore((s) => s.addExerciseToActiveSession)
+  const activeSession = useEchoStore((s) => s.activeSession)
+  const completeSet = useEchoStore((s) => s.completeSet)
+  const updateActiveSession = useEchoStore((s) => s.updateActiveSession)
+  const finishWorkout = useEchoStore((s) => s.finishWorkout)
+  const cancelWorkout = useEchoStore((s) => s.cancelWorkout)
+  const addExerciseToActiveSession = useEchoStore((s) => s.addExerciseToActiveSession)
 
   const exercises = activeSession?.exercises ?? []
   const doneCount = exercises.filter((e) => e.completed).length

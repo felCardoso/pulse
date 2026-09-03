@@ -3,18 +3,18 @@
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Dumbbell, Trophy } from 'lucide-react'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 import WeightChart from '@/components/progress/WeightChart'
-import { formatRelativeDate } from '@/utils/format'
+import { formatRelativeDate, getLocalDateStr } from '@/utils/format'
 
 export default function ExercicioEvolucaoPage() {
   const params = useParams<{ name: string }>()
   const exerciseName = decodeURIComponent(params.name)
   const norm = exerciseName.trim().toLowerCase()
 
-  const sessions = usePulseStore((s) => s.sessions)
-  const personalRecords = usePulseStore((s) => s.personalRecords)
-  const weightUnit = usePulseStore((s) => s.settings.weightUnit)
+  const sessions = useEchoStore((s) => s.sessions)
+  const personalRecords = useEchoStore((s) => s.personalRecords)
+  const weightUnit = useEchoStore((s) => s.settings.weightUnit)
 
   const pr = personalRecords[norm]
 
@@ -23,10 +23,10 @@ export default function ExercicioEvolucaoPage() {
     .filter((s) => s.status === 'completed')
     .map((session) => {
       const ex = session.exercises.find(
-        (e) => !e.isCardio && e.name.trim().toLowerCase() === norm
+        (e) => e.trackBy === 'reps' && e.name.trim().toLowerCase() === norm
       )
       if (!ex) return null
-      const doneSets = ex.sets.filter((s) => s.done && s.weight != null)
+      const doneSets = ex.sets.filter((s) => s.done && s.weight != null && !s.isWarmup)
       if (doneSets.length === 0) return null
       const maxWeight = Math.max(...doneSets.map((s) => s.weight as number))
       const volume = doneSets.reduce(
@@ -35,7 +35,7 @@ export default function ExercicioEvolucaoPage() {
       )
       return {
         sessionId: session.id,
-        date: session.startedAt.split('T')[0],
+        date: getLocalDateStr(new Date(session.startedAt)),
         startedAt: session.startedAt,
         maxWeight,
         volume: Math.round(volume),

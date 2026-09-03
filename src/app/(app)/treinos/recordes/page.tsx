@@ -2,12 +2,12 @@
 
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight, Trophy } from 'lucide-react'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 import { formatDate } from '@/utils/format'
 
 export default function RecordesPage() {
-  const personalRecords = usePulseStore((s) => s.personalRecords)
-  const weightUnit = usePulseStore((s) => s.settings.weightUnit)
+  const personalRecords = useEchoStore((s) => s.personalRecords)
+  const weightUnit = useEchoStore((s) => s.settings.weightUnit)
 
   // Most recent achievements first.
   const records = Object.values(personalRecords).sort((a, b) =>
@@ -17,7 +17,7 @@ export default function RecordesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2 pt-2">
-        <Link href="/treinos" className="text-muted-foreground hover:text-foreground">
+        <Link href="/inicio" className="text-muted-foreground hover:text-foreground">
           <ChevronLeft className="h-5 w-5" />
         </Link>
         <h1 className="text-2xl font-bold text-foreground">Recordes Pessoais</h1>
@@ -51,7 +51,7 @@ export default function RecordesPage() {
                   {pr.exerciseName}
                 </p>
                 <p className="text-xs text-muted-foreground tabular-nums">
-                  Carga máx: <span className="font-semibold text-foreground">{pr.maxWeight}{weightUnit}</span>
+                  Carga máx: <span className="font-heading font-semibold text-foreground">{pr.maxWeight}{weightUnit}</span>
                   {' · '}Volume máx: {Math.round(pr.maxVolume)}{weightUnit}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">

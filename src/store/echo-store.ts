@@ -3,45 +3,75 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { v4 as uuid } from 'uuid'
+import { getLocalDateStr } from '@/utils/format'
 import type {
   WorkoutTemplate,
   ExerciseTemplate,
   WorkoutSession,
   SessionExercise,
+  SetLog,
   PersonalRecord,
   AppSettings,
-  MacroFood,
-  DailyMacroLog,
-  MacroTargets,
   BodyMeasurement,
   ProgressPhoto,
+  Habit,
+  HabitFrequency,
 } from '@/types'
 
+/** Default auto warm-up: 60% of the working weight (40% lighter), 8 reps. */
+const DEFAULT_WARMUP_PERCENT = 60
+const DEFAULT_WARMUP_REPS = 8
+
+/** Rest-Pause mode always uses a fixed short rest, regardless of the exercise's configured rest. */
+const REST_PAUSE_SECONDS = 15
+
+/** Rounds to the nearest 2.5 (plate-friendly). */
+function roundWeight(w: number): number {
+  return Math.max(0, Math.round(w / 2.5) * 2.5)
+}
+
+/** Rotina goal: 30 valid check-ins (weekdays-only habits skip Sat/Sun; daily habits count every day). */
+export const ROUTINE_GOAL = 30
+
+export function isWeekday(dateStr: string): boolean {
+  const day = new Date(`${dateStr}T00:00:00`).getDay()
+  return day !== 0 && day !== 6
+}
+
+function countsForHabit(dateStr: string, frequency: HabitFrequency): boolean {
+  return frequency === 'daily' || isWeekday(dateStr)
+}
+
+function todayStr(): string {
+  return getLocalDateStr()
+}
+
 const DEFAULT_SETTINGS: AppSettings = {
-  primaryHue: 262,
+  primaryHue: 64,
   weightUnit: 'kg',
   defaultRestSeconds: 90,
   hapticEnabled: true,
   soundEnabled: true,
   bioimpedance: false,
+  focusModeEnabled: false,
+  workoutReminders: true,
+  routineReminders: true,
 }
 
-interface PulseStore {
+interface EchoStore {
   templates: WorkoutTemplate[]
   sessions: WorkoutSession[]
   activeSession: WorkoutSession | null
   personalRecords: Record<string, PersonalRecord>
   settings: AppSettings
 
-  // Macros
-  foods: MacroFood[]
-  dailyMacroLogs: DailyMacroLog[]
-  macroTargets: MacroTargets
-
   // Body progress
   bodyMeasurements: BodyMeasurement[]
   weightGoalKg: number | null
   progressPhotos: ProgressPhoto[]
+
+  // Habits / Rotinas
+  habits: Habit[]
 
   // Weekly schedule: weekday (0=Sunday … 6=Saturday, as string) → templateId
   weeklySchedule: Record<string, string>
@@ -51,7 +81,14 @@ interface PulseStore {
 
   // Global rest timer — lives in the store so the countdown pill survives
   // navigation between tabs (and even an app reload, since it persists).
-  rest: { endsAt: number; totalSeconds: number } | null
+  rest: {
+    endsAt: number
+    totalSeconds: number
+    /** This exercise had Rest-Pause enabled — short, silent, vibration-only end cue. */
+    isRestPause?: boolean
+    /** Set while paused (Focus Mode) — the frozen remaining ms, used instead of endsAt. */
+    pausedRemainingMs?: number
+  } | null
 
   // Template actions
   addTemplate: (template: Omit<WorkoutTemplate, 'id' | 'createdAt' | 'updatedAt'>) => WorkoutTemplate
@@ -62,8 +99,11 @@ interface PulseStore {
   startWorkout: (template: WorkoutTemplate | null, name?: string) => WorkoutSession
   updateActiveSession: (data: Partial<WorkoutSession>) => void
   addExerciseToActiveSession: (exercise: Omit<SessionExercise, 'id' | 'order'>) => void
-  completeSet: (exerciseId: string, setId: string, weight: number | undefined, reps: number | undefined) => void
-  completeCardioExercise: (exerciseId: string, minutes: number) => void
+  /** Returns true when this set just set a new personal record. */
+  completeSet: (exerciseId: string, setId: string, weight: number | undefined, reps: number | undefined, rir?: number) => boolean
+  completeTimeExercise: (exerciseId: string, minutes: number) => void
+  /** Inserts a warm-up set before the working sets, weight pre-filled from history. */
+  addWarmupSet: (exerciseId: string) => void
   replaceExerciseInActiveSession: (exerciseId: string, newName: string) => void
   finishWorkout: (notes?: string) => WorkoutSession | null
   cancelWorkout: () => void
@@ -71,15 +111,6 @@ interface PulseStore {
 
   // Settings
   updateSettings: (data: Partial<AppSettings>) => void
-
-  // Macros actions
-  addFood: (food: Omit<MacroFood, 'id' | 'lastUsedAt'>) => MacroFood
-  updateFood: (id: string, data: Partial<MacroFood>) => void
-  deleteFood: (id: string) => void
-  logMeal: (foodId: string, gramsConsumed: number, time?: string) => DailyMacroLog | null
-  getDayTotals: (date?: string) => { kcal: number; protein: number; carbs: number; fat: number; logs: DailyMacroLog[] }
-  cleanupOldFoods: () => void
-  updateMacroTargets: (data: Partial<MacroTargets>) => void
 
   // Body progress actions
   addBodyMeasurement: (data: Omit<BodyMeasurement, 'id'>) => BodyMeasurement
@@ -90,10 +121,24 @@ interface PulseStore {
   setWeeklySchedule: (weekday: number, templateId: string | null) => void
   completeOnboarding: () => void
 
+  // Habit actions
+  addHabit: (name: string, frequency?: HabitFrequency) => Habit
+  deleteHabit: (id: string) => void
+  toggleHabitToday: (id: string) => void
+  getHabitProgress: (id: string) => {
+    count: number
+    target: number
+    percentage: number
+    isRoutine: boolean
+    checkedToday: boolean
+  }
+
   // Rest timer actions
-  startRest: (seconds: number) => void
+  startRest: (seconds: number, isRestPause?: boolean) => void
   adjustRest: (deltaSeconds: number) => void
   stopRest: () => void
+  pauseRest: () => void
+  resumeRest: () => void
 
   // Computed
   getExerciseLibrary: () => string[]
@@ -111,10 +156,15 @@ function buildSessionExercises(exercises: ExerciseTemplate[]): SessionExercise[]
     restSeconds: ex.restSeconds,
     completed: false,
     order: i,
-    isCardio: ex.isCardio,
-    plannedDurationMinutes: ex.isCardio ? ex.durationMinutes ?? 20 : undefined,
-    // Cardio tracks time, not sets.
-    sets: ex.isCardio
+    trackBy: ex.trackBy,
+    plannedDurationMinutes: ex.trackBy === 'time' ? ex.durationMinutes ?? 20 : undefined,
+    bodyweight: ex.bodyweight,
+    warmupEnabled: ex.warmupEnabled,
+    warmupPercent: ex.warmupPercent,
+    progression: ex.progression,
+    restPauseEnabled: ex.restPauseEnabled,
+    // Time-based exercises log a single duration, not a set of reps.
+    sets: ex.trackBy === 'time'
       ? []
       : Array.from({ length: ex.sets }, (_, si) => ({
           id: uuid(),
@@ -125,6 +175,21 @@ function buildSessionExercises(exercises: ExerciseTemplate[]): SessionExercise[]
           doneAt: undefined,
         })),
   }))
+}
+
+/** Prepends an auto warm-up set when the exercise has it enabled. */
+function withWarmup(ex: SessionExercise, lastWeight: number | undefined): SessionExercise {
+  if (!ex.warmupEnabled || ex.trackBy !== 'reps') return ex
+  const pct = ex.warmupPercent ?? DEFAULT_WARMUP_PERCENT
+  const warmupSet: SetLog = {
+    id: uuid(),
+    setNumber: 0,
+    weight: lastWeight != null ? roundWeight(lastWeight * (pct / 100)) : undefined,
+    reps: DEFAULT_WARMUP_REPS,
+    done: false,
+    isWarmup: true,
+  }
+  return { ...ex, sets: [warmupSet, ...ex.sets] }
 }
 
 function normalizeExName(name: string) {
@@ -140,7 +205,7 @@ function startOfWeek(date: Date): Date {
   return d
 }
 
-export const usePulseStore = create<PulseStore>()(
+export const useEchoStore = create<EchoStore>()(
   persist(
     (set, get) => ({
       templates: [],
@@ -148,12 +213,10 @@ export const usePulseStore = create<PulseStore>()(
       activeSession: null,
       personalRecords: {},
       settings: DEFAULT_SETTINGS,
-      foods: [],
-      dailyMacroLogs: [],
-      macroTargets: { kcal: 2900, protein: 230, carbs: 290, fat: 97 },
       bodyMeasurements: [],
       weightGoalKg: null,
       progressPhotos: [],
+      habits: [],
       weeklySchedule: {},
       onboardingCompleted: false,
       rest: null,
@@ -184,13 +247,18 @@ export const usePulseStore = create<PulseStore>()(
 
       startWorkout: (template, name) => {
         const now = new Date().toISOString()
+        const base = template ? buildSessionExercises(template.exercises) : []
+        const exercises = base.map((ex) => {
+          const last = get().getLastSessionForExercise(ex.name)
+          return withWarmup(ex, last?.weight)
+        })
         const session: WorkoutSession = {
           id: uuid(),
           templateId: template?.id,
           name: name ?? template?.name ?? 'Treino Livre',
           date: now,
           startedAt: now,
-          exercises: template ? buildSessionExercises(template.exercises) : [],
+          exercises,
           status: 'active',
         }
         set({ activeSession: session })
@@ -205,7 +273,7 @@ export const usePulseStore = create<PulseStore>()(
         const state = get()
         if (!state.activeSession) return
         const order = state.activeSession.exercises.length
-        const exercise: SessionExercise = {
+        const built: SessionExercise = {
           ...exerciseData,
           id: uuid(),
           order,
@@ -215,6 +283,8 @@ export const usePulseStore = create<PulseStore>()(
             done: false,
           })),
         }
+        const last = state.getLastSessionForExercise(built.name)
+        const exercise = withWarmup(built, last?.weight)
         set((s) => ({
           activeSession: s.activeSession
             ? { ...s.activeSession, exercises: [...s.activeSession.exercises, exercise] }
@@ -222,30 +292,36 @@ export const usePulseStore = create<PulseStore>()(
         }))
       },
 
-      completeSet: (exerciseId, setId, weight, reps) => {
+      completeSet: (exerciseId, setId, weight, reps, rir) => {
         const state = get()
-        if (!state.activeSession) return
+        if (!state.activeSession) return false
 
         const now = new Date().toISOString()
         let exerciseName = ''
+        let isWarmupSet = false
 
         const updatedExercises = state.activeSession.exercises.map((ex) => {
           if (ex.id !== exerciseId) return ex
           exerciseName = ex.name
-          const updatedSets = ex.sets.map((s) =>
-            s.id === setId ? { ...s, weight, reps, done: true, doneAt: now } : s
-          )
-          const allDone = updatedSets.every((s) => s.done)
+          const updatedSets = ex.sets.map((s) => {
+            if (s.id !== setId) return s
+            isWarmupSet = !!s.isWarmup
+            return { ...s, weight, reps, rir, done: true, doneAt: now }
+          })
+          // Warm-up sets don't gate exercise completion — only working sets do.
+          const allDone = updatedSets.filter((s) => !s.isWarmup).every((s) => s.done)
           return { ...ex, sets: updatedSets, completed: allDone }
         })
 
-        // Update personal records
+        // Update personal records — warm-up sets never count.
+        let isPR = false
         const newRecords = { ...state.personalRecords }
-        if (exerciseName && weight != null && reps != null) {
+        if (!isWarmupSet && exerciseName && weight != null && reps != null) {
           const key = normalizeExName(exerciseName)
           const volume = weight * reps
           const existing = newRecords[key]
           if (!existing || volume > existing.maxVolume || weight > existing.maxWeight) {
+            isPR = true
             newRecords[key] = {
               exerciseName,
               maxWeight: Math.max(weight, existing?.maxWeight ?? 0),
@@ -262,9 +338,11 @@ export const usePulseStore = create<PulseStore>()(
             : null,
           personalRecords: newRecords,
         }))
+
+        return isPR
       },
 
-      completeCardioExercise: (exerciseId, minutes) => {
+      completeTimeExercise: (exerciseId, minutes) => {
         const state = get()
         if (!state.activeSession) return
         set({
@@ -277,6 +355,43 @@ export const usePulseStore = create<PulseStore>()(
             ),
           },
         })
+      },
+
+      addWarmupSet: (exerciseId) => {
+        const state = get()
+        if (!state.activeSession) return
+        const ex = state.activeSession.exercises.find((e) => e.id === exerciseId)
+        if (!ex) return
+
+        const doneWithWeight = [...ex.sets].reverse().find((s) => s.done && s.weight != null && !s.isWarmup)
+        const baseWeight = doneWithWeight?.weight ?? state.getLastSessionForExercise(ex.name)?.weight
+        const pct = ex.warmupPercent ?? DEFAULT_WARMUP_PERCENT
+        const warmupSet: SetLog = {
+          id: uuid(),
+          setNumber: 0,
+          weight: baseWeight != null ? roundWeight(baseWeight * (pct / 100)) : undefined,
+          reps: DEFAULT_WARMUP_REPS,
+          done: false,
+          isWarmup: true,
+        }
+
+        set((s) => ({
+          activeSession: s.activeSession
+            ? {
+                ...s.activeSession,
+                exercises: s.activeSession.exercises.map((e) => {
+                  if (e.id !== exerciseId) return e
+                  // Goes in after any existing warm-up sets, before the first working set.
+                  const firstWorkingIdx = e.sets.findIndex((st) => !st.isWarmup)
+                  const insertAt = firstWorkingIdx === -1 ? e.sets.length : firstWorkingIdx
+                  return {
+                    ...e,
+                    sets: [...e.sets.slice(0, insertAt), warmupSet, ...e.sets.slice(insertAt)],
+                  }
+                }),
+              }
+            : null,
+        }))
       },
 
       replaceExerciseInActiveSession: (exerciseId, newName) => {
@@ -349,7 +464,7 @@ export const usePulseStore = create<PulseStore>()(
         for (const session of state.sessions) {
           const ex = session.exercises.find((e) => normalizeExName(e.name) === key)
           if (ex) {
-            const lastDoneSet = [...ex.sets].reverse().find((s) => s.done)
+            const lastDoneSet = [...ex.sets].reverse().find((s) => s.done && !s.isWarmup)
             if (lastDoneSet) return { weight: lastDoneSet.weight, reps: lastDoneSet.reps }
           }
         }
@@ -362,97 +477,6 @@ export const usePulseStore = create<PulseStore>()(
         return state.sessions.filter(
           (s) => s.status === 'completed' && new Date(s.startedAt).getTime() >= weekStart
         )
-      },
-
-      addFood: (data) => {
-        const food: MacroFood = {
-          ...data,
-          id: uuid(),
-        }
-        set((s) => ({ foods: [...s.foods, food] }))
-        return food
-      },
-
-      updateFood: (id, data) => {
-        set((s) => ({
-          foods: s.foods.map((f) =>
-            f.id === id ? { ...f, ...data, lastUsedAt: f.lastUsedAt } : f
-          ),
-        }))
-      },
-
-      deleteFood: (id) => {
-        set((s) => ({ foods: s.foods.filter((f) => f.id !== id) }))
-      },
-
-      logMeal: (foodId, gramsConsumed, time) => {
-        const state = get()
-        const food = state.foods.find((f) => f.id === foodId)
-        if (!food) return null
-
-        const kcal = Math.round((food.kcalPer100g * gramsConsumed) / 100)
-        const protein = Math.round((food.proteinPer100g * gramsConsumed) / 100 * 10) / 10
-        const carbs = Math.round((food.carbsPer100g * gramsConsumed) / 100 * 10) / 10
-        const fat = Math.round((food.fatPer100g * gramsConsumed) / 100 * 10) / 10
-
-        // Optional "HH:MM" sets the meal's time (today's date is kept).
-        const when = new Date()
-        if (time) {
-          const [h, m] = time.split(':').map(Number)
-          if (Number.isFinite(h) && Number.isFinite(m) && h >= 0 && h < 24 && m >= 0 && m < 60) {
-            when.setHours(h, m, 0, 0)
-          }
-        }
-
-        const log: DailyMacroLog = {
-          id: uuid(),
-          date: new Date().toISOString().split('T')[0],
-          foodId,
-          foodName: food.name,
-          gramsConsumed,
-          kcal,
-          protein,
-          carbs,
-          fat,
-          timestamp: when.toISOString(),
-        }
-
-        set((s) => ({
-          dailyMacroLogs: [...s.dailyMacroLogs, log],
-          foods: s.foods.map((f) =>
-            f.id === foodId ? { ...f, lastUsedAt: new Date().toISOString() } : f
-          ),
-        }))
-
-        return log
-      },
-
-      getDayTotals: (date) => {
-        const state = get()
-        const targetDate = date || new Date().toISOString().split('T')[0]
-        const logs = state.dailyMacroLogs.filter((l) => l.date === targetDate)
-
-        return {
-          kcal: logs.reduce((acc, l) => acc + l.kcal, 0),
-          protein: Math.round(logs.reduce((acc, l) => acc + l.protein, 0) * 10) / 10,
-          carbs: Math.round(logs.reduce((acc, l) => acc + l.carbs, 0) * 10) / 10,
-          fat: Math.round(logs.reduce((acc, l) => acc + l.fat, 0) * 10) / 10,
-          logs,
-        }
-      },
-
-      cleanupOldFoods: () => {
-        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-
-        set((s) => ({
-          foods: s.foods.filter(
-            (f) => !f.lastUsedAt || f.lastUsedAt > thirtyDaysAgo
-          ),
-        }))
-      },
-
-      updateMacroTargets: (data) => {
-        set((s) => ({ macroTargets: { ...s.macroTargets, ...data } }))
       },
 
       addBodyMeasurement: (data) => {
@@ -491,7 +515,7 @@ export const usePulseStore = create<PulseStore>()(
       addProgressPhoto: (dataUrl) => {
         const photo: ProgressPhoto = {
           id: uuid(),
-          date: new Date().toISOString().split('T')[0],
+          date: getLocalDateStr(),
           dataUrl,
         }
         set((s) => ({ progressPhotos: [...s.progressPhotos, photo] }))
@@ -502,15 +526,75 @@ export const usePulseStore = create<PulseStore>()(
         set((s) => ({ progressPhotos: s.progressPhotos.filter((p) => p.id !== id) }))
       },
 
-      startRest: (seconds) => {
-        set({ rest: { endsAt: Date.now() + seconds * 1000, totalSeconds: seconds } })
+      addHabit: (name, frequency = 'weekdays') => {
+        const habit: Habit = {
+          id: uuid(),
+          name: name.trim(),
+          createdAt: new Date().toISOString(),
+          frequency,
+          completions: [],
+        }
+        set((s) => ({ habits: [...s.habits, habit] }))
+        return habit
+      },
+
+      deleteHabit: (id) => {
+        set((s) => ({ habits: s.habits.filter((h) => h.id !== id) }))
+      },
+
+      toggleHabitToday: (id) => {
+        const today = todayStr()
+        const habit = get().habits.find((h) => h.id === id)
+        if (!habit || !countsForHabit(today, habit.frequency)) return
+        set((s) => ({
+          habits: s.habits.map((h) => {
+            if (h.id !== id) return h
+            const checked = h.completions.includes(today)
+            return {
+              ...h,
+              completions: checked
+                ? h.completions.filter((d) => d !== today)
+                : [...h.completions, today],
+            }
+          }),
+        }))
+      },
+
+      getHabitProgress: (id) => {
+        const habit = get().habits.find((h) => h.id === id)
+        const count = habit
+          ? habit.completions.filter((d) => countsForHabit(d, habit.frequency)).length
+          : 0
+        return {
+          count,
+          target: ROUTINE_GOAL,
+          percentage: Math.min(100, (count / ROUTINE_GOAL) * 100),
+          isRoutine: count >= ROUTINE_GOAL,
+          checkedToday: habit ? habit.completions.includes(todayStr()) : false,
+        }
+      },
+
+      startRest: (seconds, isRestPause) => {
+        const effective = isRestPause ? REST_PAUSE_SECONDS : seconds
+        if (effective <= 0) return
+        set({ rest: { endsAt: Date.now() + effective * 1000, totalSeconds: effective, isRestPause } })
       },
 
       adjustRest: (deltaSeconds) => {
         set((s) => {
           if (!s.rest) return {}
+          // Paused (Focus Mode): adjust the frozen remaining time directly.
+          if (s.rest.pausedRemainingMs != null) {
+            return {
+              rest: {
+                ...s.rest,
+                pausedRemainingMs: Math.max(1000, s.rest.pausedRemainingMs + deltaSeconds * 1000),
+              },
+            }
+          }
           return {
             rest: {
+              ...s.rest,
               // Never adjust below ~1s so the countdown always ends naturally
               // (with the end-of-rest feedback) instead of jumping negative.
               endsAt: Math.max(Date.now() + 1000, s.rest.endsAt + deltaSeconds * 1000),
@@ -521,9 +605,29 @@ export const usePulseStore = create<PulseStore>()(
       },
 
       stopRest: () => set({ rest: null }),
+
+      pauseRest: () => {
+        set((s) => {
+          if (!s.rest || s.rest.pausedRemainingMs != null) return {}
+          return { rest: { ...s.rest, pausedRemainingMs: Math.max(0, s.rest.endsAt - Date.now()) } }
+        })
+      },
+
+      resumeRest: () => {
+        set((s) => {
+          if (!s.rest || s.rest.pausedRemainingMs == null) return {}
+          return {
+            rest: {
+              ...s.rest,
+              endsAt: Date.now() + s.rest.pausedRemainingMs,
+              pausedRemainingMs: undefined,
+            },
+          }
+        })
+      },
     }),
     {
-      name: 'pulse-store',
+      name: 'echo-store',
       skipHydration: true,
     }
   )

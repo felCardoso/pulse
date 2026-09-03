@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Plus, Scale, Bell, Target } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 import WeightChart from '@/components/progress/WeightChart'
 import MeasurementSheet from '@/components/progress/MeasurementSheet'
 import MeasurementList from '@/components/progress/MeasurementList'
@@ -18,10 +18,10 @@ const BIO_CARDS = [
 ] as const
 
 export default function ProgressoPage() {
-  const bodyMeasurements = usePulseStore((s) => s.bodyMeasurements)
-  const bioimpedance = usePulseStore((s) => !!s.settings.bioimpedance)
-  const weightUnit = usePulseStore((s) => s.settings.weightUnit)
-  const weightGoalKg = usePulseStore((s) => s.weightGoalKg)
+  const bodyMeasurements = useEchoStore((s) => s.bodyMeasurements)
+  const bioimpedance = useEchoStore((s) => !!s.settings.bioimpedance)
+  const weightUnit = useEchoStore((s) => s.settings.weightUnit)
+  const weightGoalKg = useEchoStore((s) => s.weightGoalKg)
   const [showSheet, setShowSheet] = useState(false)
   const [showGoalSheet, setShowGoalSheet] = useState(false)
 

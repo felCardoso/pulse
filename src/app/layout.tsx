@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import localFont from 'next/font/local'
+import { Space_Grotesk } from 'next/font/google'
 import './globals.css'
 
 const geistSans = localFont({
@@ -8,9 +9,17 @@ const geistSans = localFont({
   weight: '100 900',
 })
 
+// Used sparingly, only for brand/impact moments (app name, rest-timer
+// countdown, load numbers) — everything else stays on Geist Sans.
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-space-grotesk',
+  weight: ['500', '700'],
+})
+
 export const metadata: Metadata = {
-  title: 'Pulse',
-  description: 'Acompanhe seus treinos na academia.',
+  title: 'Echo',
+  description: 'Acompanhe seus treinos, rotinas e progresso.',
   manifest: '/manifest.json',
   icons: {
     icon: [
@@ -25,14 +34,14 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Pulse',
+    title: 'Echo',
     startupImage: '/icons/icon-512.png',
   },
   other: {
     'mobile-web-app-capable': 'yes',
     'apple-mobile-web-app-capable': 'yes',
-    'application-name': 'Pulse',
-    'msapplication-TileColor': '#0f0f0f',
+    'application-name': 'Echo',
+    'msapplication-TileColor': '#1e293b',
     'msapplication-TileImage': '/icons/icon-144.png',
   },
 }
@@ -52,11 +61,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Apply saved primary hue before first paint to avoid flash */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var s=JSON.parse(localStorage.getItem('pulse-store')||'{}');var h=s.state?.settings?.primaryHue;if(h!=null)document.documentElement.style.setProperty('--primary-hue',h);}catch(e){}`,
+            __html: `try{var s=JSON.parse(localStorage.getItem('echo-store')||'{}');var h=s.state?.settings?.primaryHue;if(h!=null)document.documentElement.style.setProperty('--primary-hue',h);}catch(e){}`,
           }}
         />
       </head>
-      <body className={`${geistSans.variable} antialiased`}>
+      <body className={`${geistSans.variable} ${spaceGrotesk.variable} antialiased`}>
         {children}
         <script
           dangerouslySetInnerHTML={{

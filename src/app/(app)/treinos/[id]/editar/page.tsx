@@ -4,11 +4,11 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import TemplateForm from '@/components/template/TemplateForm'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 
 export default function EditarTreinoPage() {
   const { id } = useParams<{ id: string }>()
-  const templates = usePulseStore((s) => s.templates)
+  const templates = useEchoStore((s) => s.templates)
   const template = templates.find((t) => t.id === id)
 
   if (!template) {

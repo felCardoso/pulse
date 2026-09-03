@@ -9,14 +9,14 @@ import ExerciseTracker from '@/components/session/ExerciseTracker'
 import AddExerciseSheet from '@/components/session/AddExerciseSheet'
 import { useActiveWorkout } from '@/hooks/useActiveWorkout'
 import { useWakeLock } from '@/hooks/useWakeLock'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 import type { SessionExercise } from '@/types'
 
 export default function SessaoPage() {
   const router = useRouter()
   const { activeSession, exercises, currentExercise, doneCount, totalCount, isFinishable, cancelWorkout, finishWorkout, addExerciseToActiveSession } = useActiveWorkout()
-  const weightUnit = usePulseStore((s) => s.settings.weightUnit)
-  const startRest = usePulseStore((s) => s.startRest)
+  const weightUnit = useEchoStore((s) => s.settings.weightUnit)
+  const startRest = useEchoStore((s) => s.startRest)
 
   // Keep the screen awake for the whole workout.
   useWakeLock(!!activeSession)
@@ -29,17 +29,17 @@ export default function SessaoPage() {
       <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground">
         <p>Nenhum treino ativo.</p>
         <button
-          onClick={() => router.push('/treinos')}
+          onClick={() => router.push('/inicio')}
           className="mt-4 text-primary text-sm"
         >
-          Ir para Treinos
+          Ir para o Início
         </button>
       </div>
     )
   }
 
-  const handleSetDone = (seconds: number) => {
-    if (seconds > 0) startRest(seconds)
+  const handleSetDone = (seconds: number, isRestPause?: boolean) => {
+    startRest(seconds, isRestPause)
   }
 
   const handleFinish = () => {
@@ -54,7 +54,7 @@ export default function SessaoPage() {
       setShowCancelConfirm(true)
     } else {
       cancelWorkout()
-      router.push('/treinos')
+      router.push('/inicio')
     }
   }
 
@@ -134,7 +134,7 @@ export default function SessaoPage() {
                 className="flex-1"
                 onClick={() => {
                   cancelWorkout()
-                  router.push('/treinos')
+                  router.push('/inicio')
                 }}
               >
                 Cancelar treino

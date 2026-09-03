@@ -6,18 +6,18 @@ import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import SetRow from './SetRow'
-import { usePulseStore } from '@/store/pulse-store'
+import { useEchoStore } from '@/store/echo-store'
 import { useHaptic } from '@/hooks/useHaptic'
 import { useSound } from '@/hooks/useSound'
 import { unlockAudio } from '@/lib/audio'
-import { getProgressionSuggestion, getWarmupScheme } from '@/utils/progression'
+import { getAutoProgression } from '@/utils/progression'
 import type { SessionExercise } from '@/types'
 
 interface Props {
   exercise: SessionExercise
   isCurrentExercise: boolean
   weightUnit: 'kg' | 'lbs'
-  onSetDone: (restSeconds: number) => void
+  onSetDone: (restSeconds: number, isRestPause?: boolean) => void
 }
 
 export default function ExerciseTracker({
@@ -27,11 +27,9 @@ export default function ExerciseTracker({
   onSetDone,
 }: Props) {
   const [expanded, setExpanded] = useState(isCurrentExercise)
-  const [showWarmup, setShowWarmup] = useState(false)
-  const [useSuggestion, setUseSuggestion] = useState(false)
   const [showSwap, setShowSwap] = useState(false)
   const [swapName, setSwapName] = useState('')
-  const [cardioMinutes, setCardioMinutes] = useState('')
+  const [timeValue, setTimeValue] = useState('')
 
   // Auto-expand when this exercise becomes the current one
   useEffect(() => {
@@ -44,51 +42,56 @@ export default function ExerciseTracker({
     if (exercise.completed) setExpanded(false)
   }, [exercise.completed])
 
-  const completeSet = usePulseStore((s) => s.completeSet)
-  const completeCardioExercise = usePulseStore((s) => s.completeCardioExercise)
-  const replaceExerciseInActiveSession = usePulseStore((s) => s.replaceExerciseInActiveSession)
-  const getLastSessionForExercise = usePulseStore((s) => s.getLastSessionForExercise)
-  const getExerciseLibrary = usePulseStore((s) => s.getExerciseLibrary)
-  const sessions = usePulseStore((s) => s.sessions)
+  const completeSet = useEchoStore((s) => s.completeSet)
+  const completeTimeExercise = useEchoStore((s) => s.completeTimeExercise)
+  const addWarmupSet = useEchoStore((s) => s.addWarmupSet)
+  const replaceExerciseInActiveSession = useEchoStore((s) => s.replaceExerciseInActiveSession)
+  const getLastSessionForExercise = useEchoStore((s) => s.getLastSessionForExercise)
+  const getExerciseLibrary = useEchoStore((s) => s.getExerciseLibrary)
+  const sessions = useEchoStore((s) => s.sessions)
   const haptic = useHaptic()
   const sound = useSound()
 
   const prev = getLastSessionForExercise(exercise.name)
-  const doneSets = exercise.sets.filter((s) => s.done)
-  const doneCount = doneSets.length
+  const workingSets = exercise.sets.filter((s) => !s.isWarmup)
+  const doneWorkingSets = workingSets.filter((s) => s.done)
+  const doneCount = doneWorkingSets.length
 
-  // Progressive overload: both of the last two sessions hit every planned
-  // rep at the same weight → suggest +2.5kg. Opt-in via the chip.
-  const progression =
-    !exercise.isCardio && !exercise.completed
-      ? getProgressionSuggestion(sessions, exercise.name)
+  // Automatic progression, computed from this exercise's rule + history.
+  const auto =
+    exercise.trackBy === 'reps' && !exercise.completed
+      ? getAutoProgression(sessions, exercise.name, exercise.plannedReps, exercise.progression)
       : null
 
-  // The last set completed in THIS session takes precedence over last
-  // session's values — completing set 1 pre-fills sets 2 and 3.
-  const lastDone = doneSets[doneSets.length - 1]
-  const suggestionWeight = useSuggestion && progression ? progression.suggestedWeight : undefined
-  const hintWeight = lastDone?.weight ?? suggestionWeight ?? prev?.weight
-  const hintReps = lastDone?.reps ?? prev?.reps
+  // The last working set completed in THIS session takes precedence over
+  // last session's values — completing set 1 pre-fills sets 2 and 3.
+  const lastDone = doneWorkingSets[doneWorkingSets.length - 1]
+  const hintWeight = lastDone?.weight ?? auto?.weight ?? prev?.weight
+  const hintReps = lastDone?.reps ?? auto?.reps ?? prev?.reps
 
-  const warmupBase = hintWeight ?? 0
-  const warmup = warmupBase > 0 ? getWarmupScheme(warmupBase) : null
-
-  const handleSetComplete = (setId: string, weight: number | undefined, reps: number | undefined) => {
+  const handleSetComplete = (
+    setId: string,
+    weight: number | undefined,
+    reps: number | undefined,
+    rir: number | undefined
+  ) => {
     unlockAudio()
-    completeSet(exercise.id, setId, weight, reps)
-    haptic.success()
-    sound.setDone()
-    onSetDone(exercise.restSeconds)
+    const isPR = completeSet(exercise.id, setId, weight, reps, rir)
+    if (isPR) {
+      haptic.pr()
+      sound.pr()
+    } else {
+      haptic.success()
+      sound.setDone()
+    }
+    onSetDone(exercise.restSeconds, exercise.restPauseEnabled)
   }
 
-  const handleCardioComplete = () => {
-    const minutes = cardioMinutes
-      ? parseFloat(cardioMinutes)
-      : exercise.plannedDurationMinutes ?? 0
+  const handleTimeComplete = () => {
+    const minutes = timeValue ? parseFloat(timeValue) : exercise.plannedDurationMinutes ?? 0
     if (isNaN(minutes) || minutes <= 0) return
     unlockAudio()
-    completeCardioExercise(exercise.id, Math.round(minutes * 10) / 10)
+    completeTimeExercise(exercise.id, Math.round(minutes * 10) / 10)
     haptic.success()
     sound.setDone()
   }
@@ -98,15 +101,17 @@ export default function ExerciseTracker({
     replaceExerciseInActiveSession(exercise.id, swapName)
     setShowSwap(false)
     setSwapName('')
-    setUseSuggestion(false)
   }
 
   const library = getExerciseLibrary()
 
-  const subtitle = exercise.isCardio
-    ? `${exercise.plannedDurationMinutes ?? '—'} min de cardio`
+  const subtitle = exercise.trackBy === 'time'
+    ? `${exercise.plannedDurationMinutes ?? '—'} min`
     : `${exercise.plannedSets}×${exercise.plannedReps}` +
-      (exercise.restSeconds > 0
+      (exercise.bodyweight ? ' · peso corporal' : '') +
+      (exercise.restPauseEnabled
+        ? ' · Rest-Pause'
+        : exercise.restSeconds > 0
         ? ` · ${exercise.restSeconds >= 60 ? `${Math.floor(exercise.restSeconds / 60)}min` : `${exercise.restSeconds}s`} descanso`
         : '')
 
@@ -138,7 +143,7 @@ export default function ExerciseTracker({
         >
           {exercise.completed ? (
             <Check className="h-3.5 w-3.5" />
-          ) : exercise.isCardio ? (
+          ) : exercise.trackBy === 'time' ? (
             <Timer className="h-3.5 w-3.5" />
           ) : (
             exercise.order + 1
@@ -150,11 +155,11 @@ export default function ExerciseTracker({
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span className="text-xs text-muted-foreground tabular-nums">
-            {exercise.isCardio
+            {exercise.trackBy === 'time'
               ? exercise.completed
                 ? `${exercise.actualDurationMinutes} min`
                 : ''
-              : `${doneCount}/${exercise.sets.length}`}
+              : `${doneCount}/${workingSets.length}`}
           </span>
           {expanded ? (
             <ChevronUp className="h-4 w-4 text-muted-foreground" />
@@ -167,8 +172,8 @@ export default function ExerciseTracker({
       {/* Body */}
       {expanded && (
         <div className="space-y-2 border-t border-border px-4 pb-4 pt-3">
-          {/* Cardio: single time entry */}
-          {exercise.isCardio ? (
+          {/* Time-based: single duration entry */}
+          {exercise.trackBy === 'time' ? (
             exercise.completed ? (
               <p className="text-sm text-muted-foreground">
                 Concluído: <span className="font-semibold text-foreground">{exercise.actualDurationMinutes} min</span>
@@ -179,13 +184,13 @@ export default function ExerciseTracker({
                   type="number"
                   inputMode="decimal"
                   placeholder={String(exercise.plannedDurationMinutes ?? 20)}
-                  value={cardioMinutes}
-                  onChange={(e) => setCardioMinutes(e.target.value)}
+                  value={timeValue}
+                  onChange={(e) => setTimeValue(e.target.value)}
                   className="h-9 flex-1 text-center"
                 />
                 <span className="text-sm text-muted-foreground">min</span>
                 <button
-                  onClick={handleCardioComplete}
+                  onClick={handleTimeComplete}
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary hover:bg-primary hover:text-primary-foreground transition-colors active:scale-95"
                 >
                   <Check className="h-4 w-4" />
@@ -196,53 +201,27 @@ export default function ExerciseTracker({
             <>
               {prev && (
                 <p className="text-xs text-muted-foreground mb-1">
-                  Última sessão: {prev.weight != null ? `${prev.weight}${weightUnit}` : '—'} × {prev.reps ?? '—'}
+                  Última sessão: {exercise.bodyweight ? 'peso corporal' : prev.weight != null ? `${prev.weight}${weightUnit}` : '—'} × {prev.reps ?? '—'}
                 </p>
               )}
 
-              {/* Progressive overload chip */}
-              {progression && !lastDone && (
-                <button
-                  onClick={() => setUseSuggestion((v) => !v)}
-                  className={cn(
-                    'flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs transition-colors',
-                    useSuggestion
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-border bg-secondary/50 text-foreground hover:border-primary/40'
-                  )}
-                >
-                  <TrendingUp className="h-3.5 w-3.5 shrink-0 text-primary" />
-                  <span>
-                    Progressão: você fechou {progression.currentWeight}{weightUnit} 2× —{' '}
-                    tente <span className="font-semibold">{progression.suggestedWeight}{weightUnit}</span>
-                    {useSuggestion && ' ✓'}
-                  </span>
-                </button>
+              {/* Automatic progression — always explained, never silent */}
+              {auto && !lastDone && !exercise.bodyweight && (
+                <div className="flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/8 px-3 py-2">
+                  <TrendingUp className="h-3.5 w-3.5 shrink-0 text-primary mt-0.5" />
+                  <p className="text-xs text-foreground">{auto.reason}</p>
+                </div>
               )}
 
-              {/* Warmup toggle */}
-              {warmup && doneCount === 0 && (
-                <div>
-                  <button
-                    onClick={() => setShowWarmup((v) => !v)}
-                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <Flame className="h-3.5 w-3.5" />
-                    {showWarmup ? 'Ocultar aquecimento' : 'Aquecimento sugerido'}
-                  </button>
-                  {showWarmup && (
-                    <div className="mt-1.5 rounded-lg bg-secondary/50 px-3 py-2 space-y-0.5">
-                      {warmup.map((w) => (
-                        <p key={w.pct} className="text-xs text-muted-foreground tabular-nums">
-                          {w.pct}% — <span className="font-medium text-foreground">{w.weight}{weightUnit}</span> × {w.reps}
-                        </p>
-                      ))}
-                      <p className="text-[10px] text-muted-foreground/70 pt-0.5">
-                        Baseado em {warmupBase}{weightUnit} de carga de trabalho
-                      </p>
-                    </div>
-                  )}
-                </div>
+              {/* Add a warm-up set on demand — goes in before the working sets */}
+              {!exercise.completed && (
+                <button
+                  onClick={() => addWarmupSet(exercise.id)}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Flame className="h-3.5 w-3.5" />
+                  Adicionar série de aquecimento
+                </button>
               )}
 
               {exercise.sets.map((set) => (
@@ -252,7 +231,8 @@ export default function ExerciseTracker({
                   weightUnit={weightUnit}
                   previousWeight={hintWeight}
                   previousReps={hintReps}
-                  onComplete={(w, r) => handleSetComplete(set.id, w, r)}
+                  bodyweight={exercise.bodyweight}
+                  onComplete={(w, r, rir) => handleSetComplete(set.id, w, r, rir)}
                 />
               ))}
             </>
