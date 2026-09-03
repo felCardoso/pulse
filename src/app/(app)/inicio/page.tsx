@@ -7,6 +7,8 @@ import { Play, Zap, Flame, Clock, ChevronRight, Trophy, Settings } from 'lucide-
 import { Button } from '@/components/ui/button'
 import SessionCard from '@/components/history/SessionCard'
 import TrainingHeatmap from '@/components/history/TrainingHeatmap'
+import MiniWeekAgenda from '@/components/history/MiniWeekAgenda'
+import TodayHabitsRow from '@/components/habits/TodayHabitsRow'
 import WeightChart from '@/components/progress/WeightChart'
 import { useEchoStore } from '@/store/echo-store'
 import { calcTotalVolume, computeStreak, formatDuration, getLocalDateStr } from '@/utils/format'
@@ -97,6 +99,9 @@ export default function InicioPage() {
       {/* Streak heatmap — purely psychological: don't break the chain */}
       {sessions.length > 0 && <TrainingHeatmap sessions={sessions} />}
 
+      {/* Compact glance at the week's training schedule */}
+      <MiniWeekAgenda />
+
       {/* Active workout banner */}
       {activeSession && (
         <Link
@@ -161,6 +166,9 @@ export default function InicioPage() {
       {volumePoints.length > 1 && (
         <WeightChart points={volumePoints} unit="kg" title="Volume por treino (carga total levantada)" />
       )}
+
+      {/* Quick check-in for today's routines */}
+      <TodayHabitsRow />
 
       {/* Personal records shortcut */}
       {recordCount > 0 && (
