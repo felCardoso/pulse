@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     'mobile-web-app-capable': 'yes',
     'apple-mobile-web-app-capable': 'yes',
     'application-name': 'Echo',
-    'msapplication-TileColor': '#0f0f0f',
+    'msapplication-TileColor': '#1e293b',
     'msapplication-TileImage': '/icons/icon-144.png',
   },
 }

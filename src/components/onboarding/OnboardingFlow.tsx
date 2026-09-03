@@ -106,8 +106,8 @@ export default function OnboardingFlow() {
         {step === 0 && (
           <div className="flex flex-1 flex-col justify-center gap-8">
             <div className="flex flex-col items-center gap-4 text-center">
-              <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/15">
-                <Disc className="h-10 w-10 text-primary" />
+              <div className="flex h-20 w-20 items-center justify-center rounded-[22px] bg-[#1e293b]">
+                <Disc className="h-14 w-14 text-primary" strokeWidth={2} />
               </div>
               <div>
                 <h1 className="font-heading text-2xl font-bold text-foreground">Bem-vindo ao Echo</h1>
