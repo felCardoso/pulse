@@ -1,14 +1,17 @@
 'use client'
 
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Play, Zap, Flame, Clock, ChevronRight, Trophy, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import WeeklyScheduleCard from '@/components/template/WeeklyScheduleCard'
 import SessionCard from '@/components/history/SessionCard'
 import TrainingHeatmap from '@/components/history/TrainingHeatmap'
+import WeightChart from '@/components/progress/WeightChart'
 import { usePulseStore } from '@/store/pulse-store'
 import { calcTotalVolume, computeStreak, formatDuration } from '@/utils/format'
+import { getTodaySuggestion } from '@/utils/schedule'
+import { requestNotificationPermission, notifyWorkoutReminder } from '@/lib/notifications'
 
 export default function InicioPage() {
   const router = useRouter()
@@ -19,6 +22,7 @@ export default function InicioPage() {
   const getSessionsThisWeek = usePulseStore((s) => s.getSessionsThisWeek)
   const personalRecords = usePulseStore((s) => s.personalRecords)
   const weeklySchedule = usePulseStore((s) => s.weeklySchedule)
+  const workoutReminders = usePulseStore((s) => s.settings.workoutReminders)
   const recordCount = Object.keys(personalRecords).length
 
   const completedSessions = sessions.filter((s) => s.status === 'completed')
@@ -29,31 +33,44 @@ export default function InicioPage() {
   const weekVolume = weekSessions.reduce((acc, s) => acc + calcTotalVolume(s.exercises), 0)
   const weekTime = weekSessions.reduce((acc, s) => acc + (s.duration ?? 0), 0)
 
+  // Volume per session (oldest→newest of the last 12) — a quick read on
+  // whether training intensity is trending up.
+  const volumePoints = [...completedSessions]
+    .reverse()
+    .slice(-12)
+    .map((s) => ({ date: s.startedAt.split('T')[0], value: Math.round(calcTotalVolume(s.exercises)) }))
+
   const handleFreeWorkout = () => {
     startWorkout(null)
     router.push('/treinos/livre/sessao')
   }
 
-  // Today's scheduled workout takes priority; otherwise suggest the next
-  // template in the cycle (the one after the most recent completed session).
-  const scheduledTemplate =
-    templates.find((t) => t.id === weeklySchedule[String(new Date().getDay())]) ?? null
-
-  const suggestedTemplate = (() => {
-    if (scheduledTemplate) return scheduledTemplate
-    if (templates.length === 0) return null
-    const lastTemplated = completedSessions.find((s) => s.templateId)
-    if (!lastTemplated) return templates[0]
-    const idx = templates.findIndex((t) => t.id === lastTemplated.templateId)
-    if (idx === -1) return templates[0]
-    return templates[(idx + 1) % templates.length]
-  })()
+  const { scheduled: scheduledTemplate, suggested: suggestedTemplate } = getTodaySuggestion(
+    templates,
+    sessions,
+    weeklySchedule
+  )
 
   const handleStartSuggested = () => {
     if (!suggestedTemplate) return
     startWorkout(suggestedTemplate)
     router.push(`/treinos/${suggestedTemplate.id}/sessao`)
   }
+
+  // Best-effort workout reminder: fires at most once/day, only while the
+  // app is open (no push server behind this, so no true background alert).
+  useEffect(() => {
+    requestNotificationPermission()
+  }, [])
+
+  useEffect(() => {
+    if (!workoutReminders || activeSession || !suggestedTemplate) return
+    const today = new Date().toISOString().split('T')[0]
+    const trainedToday = completedSessions.some((s) => s.startedAt.split('T')[0] === today)
+    if (trainedToday) return
+    notifyWorkoutReminder(suggestedTemplate.name)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workoutReminders, activeSession, suggestedTemplate?.id])
 
   return (
     <div className="space-y-6">
@@ -140,6 +157,11 @@ export default function InicioPage() {
         </div>
       )}
 
+      {/* Volume trend — intensity of recent sessions by total weight lifted */}
+      {volumePoints.length > 1 && (
+        <WeightChart points={volumePoints} unit="kg" title="Volume por treino (carga total levantada)" />
+      )}
+
       {/* Personal records shortcut */}
       {recordCount > 0 && (
         <Link
@@ -158,9 +180,6 @@ export default function InicioPage() {
           <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
         </Link>
       )}
-
-      {/* Weekly schedule (tap a day to assign a template) */}
-      <WeeklyScheduleCard />
 
       {/* Free workout */}
       {templates.length > 0 && (

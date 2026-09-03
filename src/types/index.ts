@@ -129,6 +129,10 @@ export interface AppSettings {
    * countdown — tap the number to pause/resume, tap anywhere else for +10s.
    */
   focusModeEnabled: boolean
+  /** Local notification reminding about today's workout when you open Início (once/day). */
+  workoutReminders: boolean
+  /** Local notification for pending Rotinas when you open the Rotinas tab (once/day). */
+  routineReminders: boolean
 }
 
 export interface BodyMeasurement {

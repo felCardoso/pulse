@@ -1,15 +1,32 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Plus, Repeat } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { usePulseStore } from '@/store/pulse-store'
+import { usePulseStore, isWeekday } from '@/store/pulse-store'
 import HabitCard from '@/components/habits/HabitCard'
 import AddHabitDialog from '@/components/habits/AddHabitDialog'
+import { requestNotificationPermission, notifyRoutineReminder } from '@/lib/notifications'
 
 export default function RotinasPage() {
   const habits = usePulseStore((s) => s.habits)
+  const getHabitProgress = usePulseStore((s) => s.getHabitProgress)
+  const routineReminders = usePulseStore((s) => s.settings.routineReminders)
   const [showAdd, setShowAdd] = useState(false)
+
+  // Best-effort routine reminder: fires at most once/day, only while the
+  // app is open (no push server behind this, so no true background alert).
+  useEffect(() => {
+    requestNotificationPermission()
+    if (!routineReminders) return
+    const today = new Date().toISOString().split('T')[0]
+    const pending = habits.filter((h) => {
+      const countsToday = h.frequency === 'daily' || isWeekday(today)
+      return countsToday && !getHabitProgress(h.id).checkedToday
+    }).length
+    notifyRoutineReminder(pending)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routineReminders])
 
   return (
     <div className="space-y-6 pb-8">

@@ -1,22 +1,19 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Check, CalendarDays } from 'lucide-react'
+import { X, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { usePulseStore } from '@/store/pulse-store'
 
-const DAY_LABELS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
-const DAY_NAMES = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+const DAY_NAMES = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado']
 
-// Weekly training schedule, editable straight from the workouts hub:
-// tap a day to pick which template (or rest) belongs to it.
+// Weekly training schedule: one stacked card per day of the week, tap to
+// open a modal and assign a saved workout (or rest) to that day.
 export default function WeeklyScheduleCard() {
   const templates = usePulseStore((s) => s.templates)
   const weeklySchedule = usePulseStore((s) => s.weeklySchedule)
   const setWeeklySchedule = usePulseStore((s) => s.setWeeklySchedule)
   const [editingDay, setEditingDay] = useState<number | null>(null)
-
-  if (templates.length === 0) return null
 
   const today = new Date().getDay()
 
@@ -24,47 +21,38 @@ export default function WeeklyScheduleCard() {
     templates.find((t) => t.id === weeklySchedule[String(day)]) ?? null
 
   return (
-    <div className="space-y-2.5">
-      <h2 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        <CalendarDays className="h-3.5 w-3.5" />
-        Agenda da semana
-      </h2>
-
-      <div className="grid grid-cols-7 gap-1.5">
-        {DAY_LABELS.map((label, day) => {
-          const template = templateFor(day)
-          const isToday = day === today
-          return (
-            <button
-              key={day}
-              onClick={() => setEditingDay(day)}
+    <div className="space-y-2">
+      {DAY_NAMES.map((name, day) => {
+        const template = templateFor(day)
+        const isToday = day === today
+        return (
+          <button
+            key={day}
+            onClick={() => setEditingDay(day)}
+            className={cn(
+              'flex w-full items-center justify-between rounded-xl border px-4 py-3.5 text-left transition-colors',
+              isToday ? 'border-primary/50 bg-primary/5' : 'border-border bg-card hover:border-primary/40'
+            )}
+          >
+            <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+              {name}
+              {isToday && (
+                <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[9px] font-semibold text-primary">
+                  HOJE
+                </span>
+              )}
+            </span>
+            <span
               className={cn(
-                'flex flex-col items-center gap-1 rounded-xl border px-1 py-2 transition-colors',
-                isToday
-                  ? 'border-primary/50 bg-primary/10'
-                  : 'border-border bg-card hover:border-primary/40'
+                'shrink-0 truncate rounded-full px-3 py-1 text-xs font-medium',
+                template ? 'bg-primary/15 text-primary' : 'bg-secondary text-muted-foreground'
               )}
             >
-              <span
-                className={cn(
-                  'text-[10px] font-semibold',
-                  isToday ? 'text-primary' : 'text-muted-foreground'
-                )}
-              >
-                {label}
-              </span>
-              <span
-                className={cn(
-                  'w-full truncate text-center text-[9px] leading-tight',
-                  template ? 'font-medium text-foreground' : 'text-muted-foreground/50'
-                )}
-              >
-                {template ? template.name : '—'}
-              </span>
-            </button>
-          )
-        })}
-      </div>
+              {template ? template.name : 'Descanso'}
+            </span>
+          </button>
+        )
+      })}
 
       {/* Day editor sheet */}
       {editingDay !== null && (
@@ -105,29 +93,35 @@ export default function WeeklyScheduleCard() {
                   <Check className="h-4 w-4 text-primary" />
                 )}
               </button>
-              {templates.map((t) => {
-                const selected = weeklySchedule[String(editingDay)] === t.id
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => {
-                      setWeeklySchedule(editingDay, t.id)
-                      setEditingDay(null)
-                    }}
-                    className={cn(
-                      'flex w-full items-center justify-between rounded-xl border-2 px-4 py-3 text-left transition-colors',
-                      selected
-                        ? 'border-primary bg-primary/10'
-                        : 'border-border bg-card hover:border-primary/40'
-                    )}
-                  >
-                    <span className="truncate text-sm font-medium text-foreground">
-                      {t.name}
-                    </span>
-                    {selected && <Check className="h-4 w-4 shrink-0 text-primary" />}
-                  </button>
-                )
-              })}
+              {templates.length === 0 ? (
+                <p className="px-1 py-2 text-center text-xs text-muted-foreground">
+                  Crie um treino para poder atribuí-lo a este dia.
+                </p>
+              ) : (
+                templates.map((t) => {
+                  const selected = weeklySchedule[String(editingDay)] === t.id
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => {
+                        setWeeklySchedule(editingDay, t.id)
+                        setEditingDay(null)
+                      }}
+                      className={cn(
+                        'flex w-full items-center justify-between rounded-xl border-2 px-4 py-3 text-left transition-colors',
+                        selected
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border bg-card hover:border-primary/40'
+                      )}
+                    >
+                      <span className="truncate text-sm font-medium text-foreground">
+                        {t.name}
+                      </span>
+                      {selected && <Check className="h-4 w-4 shrink-0 text-primary" />}
+                    </button>
+                  )
+                })
+              )}
             </div>
           </div>
         </div>

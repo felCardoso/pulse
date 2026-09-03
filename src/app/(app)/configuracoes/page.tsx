@@ -207,6 +207,44 @@ export default function ConfiguracoesPage() {
               </div>
             </div>
           </section>
+
+          <section className="space-y-3">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Notificações
+            </h2>
+            <div className="rounded-xl border border-border bg-card divide-y divide-border">
+              <div className="flex items-center justify-between px-4 py-3.5">
+                <div className="pr-3">
+                  <Label className="cursor-pointer">Treino do dia</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Lembrete do treino de hoje ao abrir o Início, se ainda não treinou.
+                  </p>
+                </div>
+                {switchButton(
+                  settings.workoutReminders,
+                  () => updateSettings({ workoutReminders: !settings.workoutReminders }),
+                  'Treino do dia'
+                )}
+              </div>
+              <div className="flex items-center justify-between px-4 py-3.5">
+                <div className="pr-3">
+                  <Label className="cursor-pointer">Rotinas pendentes</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Lembrete de rotinas do dia ainda não marcadas ao abrir a aba Rotina.
+                  </p>
+                </div>
+                {switchButton(
+                  settings.routineReminders,
+                  () => updateSettings({ routineReminders: !settings.routineReminders }),
+                  'Rotinas pendentes'
+                )}
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Essas notificações disparam no máximo 1x por dia, só enquanto o app está aberto —
+              não há aviso em segundo plano com o app fechado.
+            </p>
+          </section>
         </div>
       )}
 

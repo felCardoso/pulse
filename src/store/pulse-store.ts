@@ -53,6 +53,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   soundEnabled: true,
   bioimpedance: false,
   focusModeEnabled: false,
+  workoutReminders: true,
+  routineReminders: true,
 }
 
 interface PulseStore {

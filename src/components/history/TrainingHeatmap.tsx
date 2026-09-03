@@ -58,7 +58,8 @@ export default function TrainingHeatmap({ sessions }: { sessions: WorkoutSession
   }
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2 rounded-xl border border-border bg-card p-4">
+      <p className="text-sm text-muted-foreground">Frequência de treinos</p>
       <div className="overflow-x-auto no-scrollbar">
         <div className="inline-block min-w-full">
           {/* Month labels */}

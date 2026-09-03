@@ -1,13 +1,15 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Dumbbell, Play, Home, TrendingUp, Repeat } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { usePulseStore } from '@/store/pulse-store'
+import StartWorkoutSheet from '@/components/session/StartWorkoutSheet'
 
 // Treinos gets the raised center circle — it's the app's primary action:
-// start a saved workout. Creating/editing lives on the Treinos page itself.
+// start a workout. Creating/editing/organizing lives on the Treinos page.
 const leftTabs = [
   { href: '/inicio', label: 'Início', icon: Home, match: '/inicio' },
 ]
@@ -20,15 +22,7 @@ export default function BottomNav() {
   const pathname = usePathname()
   const activeSession = usePulseStore((s) => s.activeSession)
   const treinoActive = pathname.startsWith('/treinos')
-
-  // No workout running: the button opens the saved-workouts list to start
-  // one. A workout in progress: it resumes that session directly, so it
-  // switches to a darker "play" look instead of competing with primary.
-  const fabHref = activeSession
-    ? activeSession.templateId
-      ? `/treinos/${activeSession.templateId}/sessao`
-      : '/treinos/livre/sessao'
-    : '/treinos'
+  const [showStart, setShowStart] = useState(false)
 
   const renderTab = ({ href, label, icon: Icon, match }: (typeof leftTabs)[number]) => {
     const active = pathname.startsWith(match)
@@ -55,25 +49,36 @@ export default function BottomNav() {
         <div className="flex flex-1 items-center justify-evenly">{rightTabs.map(renderTab)}</div>
       </div>
 
-      {/* Treinos — raised circular FAB, centered over the bar. Switches to a
-          darker "resume" look while a workout is in progress. */}
-      <Link
-        href={fabHref}
-        aria-label={activeSession ? 'Retomar treino' : 'Treinos'}
-        className={cn(
-          '-top-7 absolute left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full shadow-lg shadow-black/40 ring-4 ring-background transition-transform active:scale-95',
-          activeSession
-            ? 'bg-secondary text-primary'
-            : 'bg-primary text-primary-foreground',
-          treinoActive && 'scale-105'
-        )}
-      >
-        {activeSession ? (
+      {/* Treinos — raised circular FAB, centered over the bar. No workout
+          running: opens the quick-start sheet (today's workout, or pick
+          another). Workout in progress: resumes it directly, switching to
+          a darker "play" look instead of competing with primary. */}
+      {activeSession ? (
+        <Link
+          href={
+            activeSession.templateId
+              ? `/treinos/${activeSession.templateId}/sessao`
+              : '/treinos/livre/sessao'
+          }
+          aria-label="Retomar treino"
+          className="-top-7 absolute left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-secondary text-primary shadow-lg shadow-black/40 ring-4 ring-background transition-transform active:scale-95"
+        >
           <Play className="h-6 w-6 fill-primary" />
-        ) : (
+        </Link>
+      ) : (
+        <button
+          onClick={() => setShowStart(true)}
+          aria-label="Iniciar treino"
+          className={cn(
+            '-top-7 absolute left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-black/40 ring-4 ring-background transition-transform active:scale-95',
+            treinoActive && 'scale-105'
+          )}
+        >
           <Dumbbell className="h-6 w-6" strokeWidth={2} />
-        )}
-      </Link>
+        </button>
+      )}
+
+      {showStart && <StartWorkoutSheet onClose={() => setShowStart(false)} />}
     </nav>
   )
 }
