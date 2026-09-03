@@ -41,13 +41,13 @@ export function formatElapsed(startedAt: string): string {
 }
 
 export function calcTotalVolume(
-  exercises: { sets: { weight?: number; reps?: number; done: boolean }[] }[]
+  exercises: { sets: { weight?: number; reps?: number; done: boolean; isWarmup?: boolean }[] }[]
 ): number {
   return exercises.reduce((total, ex) => {
     return (
       total +
       ex.sets.reduce((setTotal, s) => {
-        if (!s.done || s.weight == null || s.reps == null) return setTotal
+        if (!s.done || s.weight == null || s.reps == null || s.isWarmup) return setTotal
         return setTotal + s.weight * s.reps
       }, 0)
     )

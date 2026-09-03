@@ -22,6 +22,7 @@ function defaultExercise(order: number): ExerciseDraft {
     reps: '10',
     restSeconds: 90,
     order,
+    trackBy: 'reps',
   }
 }
 
@@ -93,6 +94,12 @@ export default function TemplateForm({ existing }: Props) {
       restSeconds: ex.restSeconds,
       notes: ex.notes,
       order: i,
+      trackBy: ex.trackBy,
+      durationMinutes: ex.durationMinutes,
+      bodyweight: ex.bodyweight,
+      warmupEnabled: ex.warmupEnabled,
+      warmupPercent: ex.warmupPercent,
+      progression: ex.progression,
     }))
 
     if (existing) {

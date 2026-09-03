@@ -87,12 +87,16 @@ export default function RestTimer() {
   const progress = rest.totalSeconds > 0 ? timeLeft / rest.totalSeconds : 0
   const strokeDashoffset = CIRCUMFERENCE * (1 - Math.min(1, progress))
 
-  // "Supino reto · série 3/4" — what comes after the rest.
+  // "Supino reto · série 3/4" — what comes after the rest. Warm-up sets
+  // aren't counted in the X/Y (they're not part of the working-set total).
   const currentExercise = activeSession?.exercises.find((e) => !e.completed)
   const nextSet = currentExercise?.sets.find((s) => !s.done)
+  const workingSetCount = currentExercise?.sets.filter((s) => !s.isWarmup).length ?? 0
   const nextLabel = currentExercise
     ? nextSet
-      ? `${currentExercise.name} · série ${nextSet.setNumber}/${currentExercise.sets.length}`
+      ? nextSet.isWarmup
+        ? `${currentExercise.name} · aquecimento`
+        : `${currentExercise.name} · série ${nextSet.setNumber}/${workingSetCount}`
       : currentExercise.name
     : undefined
 

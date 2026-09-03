@@ -8,6 +8,7 @@ import type {
   ExerciseTemplate,
   WorkoutSession,
   SessionExercise,
+  SetLog,
   PersonalRecord,
   AppSettings,
   BodyMeasurement,
@@ -15,6 +16,15 @@ import type {
   Habit,
   HabitFrequency,
 } from '@/types'
+
+/** Default auto warm-up: 60% of the working weight (40% lighter), 8 reps. */
+const DEFAULT_WARMUP_PERCENT = 60
+const DEFAULT_WARMUP_REPS = 8
+
+/** Rounds to the nearest 2.5 (plate-friendly). */
+function roundWeight(w: number): number {
+  return Math.max(0, Math.round(w / 2.5) * 2.5)
+}
 
 /** Rotina goal: 30 valid check-ins (weekdays-only habits skip Sat/Sun; daily habits count every day). */
 export const ROUTINE_GOAL = 30
@@ -75,8 +85,11 @@ interface PulseStore {
   startWorkout: (template: WorkoutTemplate | null, name?: string) => WorkoutSession
   updateActiveSession: (data: Partial<WorkoutSession>) => void
   addExerciseToActiveSession: (exercise: Omit<SessionExercise, 'id' | 'order'>) => void
-  completeSet: (exerciseId: string, setId: string, weight: number | undefined, reps: number | undefined) => void
-  completeCardioExercise: (exerciseId: string, minutes: number) => void
+  /** Returns true when this set just set a new personal record. */
+  completeSet: (exerciseId: string, setId: string, weight: number | undefined, reps: number | undefined) => boolean
+  completeTimeExercise: (exerciseId: string, minutes: number) => void
+  /** Inserts a warm-up set before the working sets, weight pre-filled from history. */
+  addWarmupSet: (exerciseId: string) => void
   replaceExerciseInActiveSession: (exerciseId: string, newName: string) => void
   finishWorkout: (notes?: string) => WorkoutSession | null
   cancelWorkout: () => void
@@ -127,10 +140,14 @@ function buildSessionExercises(exercises: ExerciseTemplate[]): SessionExercise[]
     restSeconds: ex.restSeconds,
     completed: false,
     order: i,
-    isCardio: ex.isCardio,
-    plannedDurationMinutes: ex.isCardio ? ex.durationMinutes ?? 20 : undefined,
-    // Cardio tracks time, not sets.
-    sets: ex.isCardio
+    trackBy: ex.trackBy,
+    plannedDurationMinutes: ex.trackBy === 'time' ? ex.durationMinutes ?? 20 : undefined,
+    bodyweight: ex.bodyweight,
+    warmupEnabled: ex.warmupEnabled,
+    warmupPercent: ex.warmupPercent,
+    progression: ex.progression,
+    // Time-based exercises log a single duration, not a set of reps.
+    sets: ex.trackBy === 'time'
       ? []
       : Array.from({ length: ex.sets }, (_, si) => ({
           id: uuid(),
@@ -141,6 +158,21 @@ function buildSessionExercises(exercises: ExerciseTemplate[]): SessionExercise[]
           doneAt: undefined,
         })),
   }))
+}
+
+/** Prepends an auto warm-up set when the exercise has it enabled. */
+function withWarmup(ex: SessionExercise, lastWeight: number | undefined): SessionExercise {
+  if (!ex.warmupEnabled || ex.trackBy !== 'reps') return ex
+  const pct = ex.warmupPercent ?? DEFAULT_WARMUP_PERCENT
+  const warmupSet: SetLog = {
+    id: uuid(),
+    setNumber: 0,
+    weight: lastWeight != null ? roundWeight(lastWeight * (pct / 100)) : undefined,
+    reps: DEFAULT_WARMUP_REPS,
+    done: false,
+    isWarmup: true,
+  }
+  return { ...ex, sets: [warmupSet, ...ex.sets] }
 }
 
 function normalizeExName(name: string) {
@@ -198,13 +230,18 @@ export const usePulseStore = create<PulseStore>()(
 
       startWorkout: (template, name) => {
         const now = new Date().toISOString()
+        const base = template ? buildSessionExercises(template.exercises) : []
+        const exercises = base.map((ex) => {
+          const last = get().getLastSessionForExercise(ex.name)
+          return withWarmup(ex, last?.weight)
+        })
         const session: WorkoutSession = {
           id: uuid(),
           templateId: template?.id,
           name: name ?? template?.name ?? 'Treino Livre',
           date: now,
           startedAt: now,
-          exercises: template ? buildSessionExercises(template.exercises) : [],
+          exercises,
           status: 'active',
         }
         set({ activeSession: session })
@@ -219,7 +256,7 @@ export const usePulseStore = create<PulseStore>()(
         const state = get()
         if (!state.activeSession) return
         const order = state.activeSession.exercises.length
-        const exercise: SessionExercise = {
+        const built: SessionExercise = {
           ...exerciseData,
           id: uuid(),
           order,
@@ -229,6 +266,8 @@ export const usePulseStore = create<PulseStore>()(
             done: false,
           })),
         }
+        const last = state.getLastSessionForExercise(built.name)
+        const exercise = withWarmup(built, last?.weight)
         set((s) => ({
           activeSession: s.activeSession
             ? { ...s.activeSession, exercises: [...s.activeSession.exercises, exercise] }
@@ -238,28 +277,34 @@ export const usePulseStore = create<PulseStore>()(
 
       completeSet: (exerciseId, setId, weight, reps) => {
         const state = get()
-        if (!state.activeSession) return
+        if (!state.activeSession) return false
 
         const now = new Date().toISOString()
         let exerciseName = ''
+        let isWarmupSet = false
 
         const updatedExercises = state.activeSession.exercises.map((ex) => {
           if (ex.id !== exerciseId) return ex
           exerciseName = ex.name
-          const updatedSets = ex.sets.map((s) =>
-            s.id === setId ? { ...s, weight, reps, done: true, doneAt: now } : s
-          )
-          const allDone = updatedSets.every((s) => s.done)
+          const updatedSets = ex.sets.map((s) => {
+            if (s.id !== setId) return s
+            isWarmupSet = !!s.isWarmup
+            return { ...s, weight, reps, done: true, doneAt: now }
+          })
+          // Warm-up sets don't gate exercise completion — only working sets do.
+          const allDone = updatedSets.filter((s) => !s.isWarmup).every((s) => s.done)
           return { ...ex, sets: updatedSets, completed: allDone }
         })
 
-        // Update personal records
+        // Update personal records — warm-up sets never count.
+        let isPR = false
         const newRecords = { ...state.personalRecords }
-        if (exerciseName && weight != null && reps != null) {
+        if (!isWarmupSet && exerciseName && weight != null && reps != null) {
           const key = normalizeExName(exerciseName)
           const volume = weight * reps
           const existing = newRecords[key]
           if (!existing || volume > existing.maxVolume || weight > existing.maxWeight) {
+            isPR = true
             newRecords[key] = {
               exerciseName,
               maxWeight: Math.max(weight, existing?.maxWeight ?? 0),
@@ -276,9 +321,11 @@ export const usePulseStore = create<PulseStore>()(
             : null,
           personalRecords: newRecords,
         }))
+
+        return isPR
       },
 
-      completeCardioExercise: (exerciseId, minutes) => {
+      completeTimeExercise: (exerciseId, minutes) => {
         const state = get()
         if (!state.activeSession) return
         set({
@@ -291,6 +338,43 @@ export const usePulseStore = create<PulseStore>()(
             ),
           },
         })
+      },
+
+      addWarmupSet: (exerciseId) => {
+        const state = get()
+        if (!state.activeSession) return
+        const ex = state.activeSession.exercises.find((e) => e.id === exerciseId)
+        if (!ex) return
+
+        const doneWithWeight = [...ex.sets].reverse().find((s) => s.done && s.weight != null && !s.isWarmup)
+        const baseWeight = doneWithWeight?.weight ?? state.getLastSessionForExercise(ex.name)?.weight
+        const pct = ex.warmupPercent ?? DEFAULT_WARMUP_PERCENT
+        const warmupSet: SetLog = {
+          id: uuid(),
+          setNumber: 0,
+          weight: baseWeight != null ? roundWeight(baseWeight * (pct / 100)) : undefined,
+          reps: DEFAULT_WARMUP_REPS,
+          done: false,
+          isWarmup: true,
+        }
+
+        set((s) => ({
+          activeSession: s.activeSession
+            ? {
+                ...s.activeSession,
+                exercises: s.activeSession.exercises.map((e) => {
+                  if (e.id !== exerciseId) return e
+                  // Goes in after any existing warm-up sets, before the first working set.
+                  const firstWorkingIdx = e.sets.findIndex((st) => !st.isWarmup)
+                  const insertAt = firstWorkingIdx === -1 ? e.sets.length : firstWorkingIdx
+                  return {
+                    ...e,
+                    sets: [...e.sets.slice(0, insertAt), warmupSet, ...e.sets.slice(insertAt)],
+                  }
+                }),
+              }
+            : null,
+        }))
       },
 
       replaceExerciseInActiveSession: (exerciseId, newName) => {
@@ -363,7 +447,7 @@ export const usePulseStore = create<PulseStore>()(
         for (const session of state.sessions) {
           const ex = session.exercises.find((e) => normalizeExName(e.name) === key)
           if (ex) {
-            const lastDoneSet = [...ex.sets].reverse().find((s) => s.done)
+            const lastDoneSet = [...ex.sets].reverse().find((s) => s.done && !s.isWarmup)
             if (lastDoneSet) return { weight: lastDoneSet.weight, reps: lastDoneSet.reps }
           }
         }

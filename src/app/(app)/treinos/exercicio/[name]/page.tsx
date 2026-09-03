@@ -23,10 +23,10 @@ export default function ExercicioEvolucaoPage() {
     .filter((s) => s.status === 'completed')
     .map((session) => {
       const ex = session.exercises.find(
-        (e) => !e.isCardio && e.name.trim().toLowerCase() === norm
+        (e) => e.trackBy === 'reps' && e.name.trim().toLowerCase() === norm
       )
       if (!ex) return null
-      const doneSets = ex.sets.filter((s) => s.done && s.weight != null)
+      const doneSets = ex.sets.filter((s) => s.done && s.weight != null && !s.isWarmup)
       if (doneSets.length === 0) return null
       const maxWeight = Math.max(...doneSets.map((s) => s.weight as number))
       const volume = doneSets.reduce(

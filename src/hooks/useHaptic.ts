@@ -15,5 +15,6 @@ export function useHaptic() {
     tap: () => vibrate(10),
     success: () => vibrate([20, 10, 20]),
     restEnd: () => vibrate([50, 30, 80, 30, 50]),
+    pr: () => vibrate([30, 20, 30, 20, 60]),
   }
 }

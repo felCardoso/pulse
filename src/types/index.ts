@@ -1,3 +1,26 @@
+/**
+ * Automatic weight progression applied between sessions:
+ * - 'none': manual — no auto-suggested weight.
+ * - 'linear': +step every session where all sets hit the target reps.
+ * - 'greyskull': Greyskull LP — last set is AMRAP; hit the target reps to
+ *   add +step, double the target to get a +2×step bonus, and fail twice in
+ *   a row to trigger a 10% deload.
+ * - 'double': double progression — weight stays fixed while reps climb from
+ *   repsFrom to repsTo; hitting repsTo on every set adds +step and resets
+ *   the rep target back to repsFrom.
+ */
+export type ProgressionType = 'none' | 'linear' | 'greyskull' | 'double'
+
+export interface ProgressionConfig {
+  type: ProgressionType
+  /** Weight added when the lift progresses. */
+  step: number
+  /** Double progression only — bottom of the working rep range (default 8). */
+  repsFrom?: number
+  /** Double progression only — top of the rep range; hitting it triggers the weight jump (default 10). */
+  repsTo?: number
+}
+
 export interface ExerciseTemplate {
   id: string
   name: string
@@ -6,9 +29,17 @@ export interface ExerciseTemplate {
   restSeconds: number
   notes?: string
   order: number
-  /** Cardio exercises track time (minutes) instead of sets/reps */
-  isCardio?: boolean
+  /** Whether this exercise is logged by reps or by a duration. */
+  trackBy: 'reps' | 'time'
   durationMinutes?: number
+  /** No weight is logged — sets are tracked by reps alone (uses body weight). */
+  bodyweight?: boolean
+  /** Automatically adds a warm-up set before the working sets. */
+  warmupEnabled?: boolean
+  /** % of the working weight used for the auto warm-up set (default 60 = 40% lighter). */
+  warmupPercent?: number
+  /** Automatic weight progression rule for this exercise. */
+  progression?: ProgressionConfig
 }
 
 export interface WorkoutTemplate {
@@ -27,6 +58,8 @@ export interface SetLog {
   reps?: number
   done: boolean
   doneAt?: string
+  /** A lighter warm-up set — excluded from PRs, volume, and progression. */
+  isWarmup?: boolean
 }
 
 export interface SessionExercise {
@@ -39,10 +72,14 @@ export interface SessionExercise {
   sets: SetLog[]
   completed: boolean
   order: number
-  /** Cardio exercises track time (minutes) instead of sets/reps */
-  isCardio?: boolean
+  /** Whether this exercise is logged by reps or by a duration. */
+  trackBy: 'reps' | 'time'
   plannedDurationMinutes?: number
   actualDurationMinutes?: number
+  bodyweight?: boolean
+  warmupEnabled?: boolean
+  warmupPercent?: number
+  progression?: ProgressionConfig
 }
 
 export interface WorkoutSession {

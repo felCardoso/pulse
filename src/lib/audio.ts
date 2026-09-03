@@ -39,6 +39,17 @@ export function playSetDoneSound() {
   }
 }
 
+/** Celebratory 3-note ascending chime for a new personal record. */
+export function playPRSound() {
+  try {
+    playTone(660, 0.12, 0.3)
+    setTimeout(() => playTone(880, 0.12, 0.3), 110)
+    setTimeout(() => playTone(1320, 0.25, 0.35), 220)
+  } catch {
+    // audio not available
+  }
+}
+
 export function unlockAudio() {
   try {
     getCtx()

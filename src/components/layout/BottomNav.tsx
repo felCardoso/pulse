@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Dumbbell, TrendingUp, Settings, Repeat } from 'lucide-react'
+import { Dumbbell, Play, TrendingUp, Settings, Repeat } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { usePulseStore } from '@/store/pulse-store'
 
 // Treinos gets the raised center circle — it's the app's primary action.
 const leftTabs = [
@@ -16,7 +17,17 @@ const rightTabs = [
 
 export default function BottomNav() {
   const pathname = usePathname()
+  const activeSession = usePulseStore((s) => s.activeSession)
   const treinoActive = pathname.startsWith('/treinos')
+
+  // No workout running: the button starts one (today's suggestion lives on
+  // /treinos). A workout in progress: it resumes that session directly, so
+  // it switches to a darker "play" look instead of competing with primary.
+  const fabHref = activeSession
+    ? activeSession.templateId
+      ? `/treinos/${activeSession.templateId}/sessao`
+      : '/treinos/livre/sessao'
+    : '/treinos'
 
   const renderTab = ({ href, label, icon: Icon, match }: (typeof leftTabs)[number]) => {
     const active = pathname.startsWith(match)
@@ -43,16 +54,24 @@ export default function BottomNav() {
         <div className="flex flex-1 items-center justify-evenly">{rightTabs.map(renderTab)}</div>
       </div>
 
-      {/* Treinos — raised circular FAB, centered over the bar */}
+      {/* Treinos — raised circular FAB, centered over the bar. Switches to a
+          darker "resume" look while a workout is in progress. */}
       <Link
-        href="/treinos"
-        aria-label="Treinos"
+        href={fabHref}
+        aria-label={activeSession ? 'Retomar treino' : 'Treinos'}
         className={cn(
-          '-top-7 absolute left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-black/40 ring-4 ring-background transition-transform active:scale-95',
+          '-top-7 absolute left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full shadow-lg shadow-black/40 ring-4 ring-background transition-transform active:scale-95',
+          activeSession
+            ? 'bg-secondary text-primary'
+            : 'bg-primary text-primary-foreground',
           treinoActive && 'scale-105'
         )}
       >
-        <Dumbbell className="h-6 w-6" strokeWidth={treinoActive ? 2.5 : 2} />
+        {activeSession ? (
+          <Play className="h-6 w-6 fill-primary" />
+        ) : (
+          <Dumbbell className="h-6 w-6" strokeWidth={2} />
+        )}
       </Link>
     </nav>
   )

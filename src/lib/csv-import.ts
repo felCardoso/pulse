@@ -45,7 +45,7 @@ export function parseTemplateCSV(text: string): ParseResult {
     const reps = rawReps || '10'
     const restSeconds = parseInt(rawRest) || 90
 
-    exercises.push({ name: rawName, sets, reps, restSeconds })
+    exercises.push({ name: rawName, sets, reps, restSeconds, trackBy: 'reps' })
   })
 
   return { exercises, errors }

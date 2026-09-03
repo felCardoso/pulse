@@ -50,14 +50,18 @@ export default function SessaoDetailPage() {
       exercises: session.exercises.map((ex, i) => ({
         id: ex.id,
         name: ex.name,
-        sets: ex.isCardio ? 1 : ex.sets.length,
+        sets: ex.trackBy === 'time' ? 1 : ex.sets.filter((s) => !s.isWarmup).length,
         reps: ex.plannedReps,
         restSeconds: ex.restSeconds,
         order: i,
-        isCardio: ex.isCardio,
-        durationMinutes: ex.isCardio
+        trackBy: ex.trackBy,
+        durationMinutes: ex.trackBy === 'time'
           ? ex.actualDurationMinutes ?? ex.plannedDurationMinutes
           : undefined,
+        bodyweight: ex.bodyweight,
+        warmupEnabled: ex.warmupEnabled,
+        warmupPercent: ex.warmupPercent,
+        progression: ex.progression,
       })),
     })
     setSavedAsTemplate(true)
@@ -131,11 +135,11 @@ export default function SessaoDetailPage() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{ex.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {ex.isCardio
+                  {ex.trackBy === 'time'
                     ? ex.completed
-                      ? `${ex.actualDurationMinutes} min de cardio`
-                      : 'Cardio não realizado'
-                    : `${ex.sets.filter((s) => s.done).length}/${ex.sets.length} séries`}
+                      ? `${ex.actualDurationMinutes} min`
+                      : 'Não realizado'
+                    : `${ex.sets.filter((s) => s.done && !s.isWarmup).length}/${ex.sets.filter((s) => !s.isWarmup).length} séries`}
                 </p>
               </div>
               {expandedEx === ex.id ? (
@@ -148,12 +152,18 @@ export default function SessaoDetailPage() {
               <div className="border-t border-border px-4 pb-3 pt-2 space-y-1.5">
                 {ex.sets.map((set) => (
                   <div key={set.id} className="flex items-center gap-3 text-sm">
-                    <span className="w-5 text-center text-xs text-muted-foreground">
-                      {set.setNumber}
-                    </span>
+                    {set.isWarmup ? (
+                      <span className="w-9 shrink-0 text-center text-[9px] font-semibold text-orange-500">
+                        Aquec.
+                      </span>
+                    ) : (
+                      <span className="w-5 shrink-0 text-center text-xs text-muted-foreground">
+                        {set.setNumber}
+                      </span>
+                    )}
                     <span className={set.done ? 'text-foreground' : 'text-muted-foreground'}>
                       {set.done
-                        ? `${set.weight != null ? `${set.weight}kg` : '—'} × ${set.reps ?? '—'}`
+                        ? `${ex.bodyweight ? 'peso corporal' : set.weight != null ? `${set.weight}kg` : '—'} × ${set.reps ?? '—'}`
                         : 'Não realizada'}
                     </span>
                     {set.done && <Check className="h-3.5 w-3.5 text-primary ml-auto" />}
