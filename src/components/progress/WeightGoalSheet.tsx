@@ -32,9 +32,9 @@ export default function WeightGoalSheet({ onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end bg-black/50" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end bg-black/50 animate-fade-in" onClick={onClose}>
       <div
-        className="w-full bg-background rounded-t-2xl border-t border-border p-4 space-y-4"
+        className="w-full bg-background rounded-t-2xl border-t border-border p-4 space-y-4 animate-slide-up-sheet"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">

@@ -132,7 +132,7 @@ export default function RestTimer() {
   // rest; small discrete buttons at the bottom adjust the time.
   if (focusModeEnabled) {
     return (
-      <div className="fixed inset-0 z-[80] flex flex-col bg-black">
+      <div className="fixed inset-0 z-[80] flex flex-col bg-black animate-fade-in">
         <div
           {...focusPress}
           className="flex w-full flex-1 select-none flex-col items-center justify-center gap-3 px-8"
@@ -179,7 +179,7 @@ export default function RestTimer() {
       // never covered by it on mobile.
       style={{ bottom: 'calc(4.5rem + env(safe-area-inset-bottom, 0px))' }}
     >
-      <div className="pointer-events-auto w-full max-w-lg rounded-2xl border border-primary/30 bg-background/95 shadow-lg shadow-black/40 backdrop-blur-md">
+      <div className="pointer-events-auto w-full max-w-lg animate-fade-in-up rounded-2xl border border-primary/30 bg-background/95 shadow-lg shadow-black/40 backdrop-blur-md">
         <div className="flex items-center gap-3 px-3 py-2.5">
           {/* Mini progress ring with countdown */}
           <div className="relative shrink-0">

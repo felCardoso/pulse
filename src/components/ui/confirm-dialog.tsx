@@ -44,11 +44,11 @@ export default function ConfirmDialog({
       className="fixed inset-0 z-[60] flex items-center justify-center p-4"
       onClick={onCancel}
     >
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in" />
       <div
         role="dialog"
         aria-modal="true"
-        className="relative w-full max-w-sm rounded-2xl border border-border bg-card p-5 shadow-xl"
+        className="relative w-full max-w-sm rounded-2xl border border-border bg-card p-5 shadow-xl animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start gap-3">

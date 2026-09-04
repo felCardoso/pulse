@@ -57,11 +57,11 @@ export default function WeeklyScheduleCard() {
       {/* Day editor sheet */}
       {editingDay !== null && (
         <div
-          className="fixed inset-0 z-50 flex items-end bg-black/50"
+          className="fixed inset-0 z-50 flex items-end bg-black/50 animate-fade-in"
           onClick={() => setEditingDay(null)}
         >
           <div
-            className="w-full rounded-t-2xl border-t border-border bg-background p-4 space-y-3 max-h-[70vh] overflow-y-auto"
+            className="w-full rounded-t-2xl border-t border-border bg-background p-4 space-y-3 max-h-[70vh] overflow-y-auto animate-slide-up-sheet"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">

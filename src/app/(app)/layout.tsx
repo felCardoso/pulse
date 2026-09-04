@@ -1,4 +1,5 @@
 import BottomNav from '@/components/layout/BottomNav'
+import PageTransition from '@/components/layout/PageTransition'
 import StoreHydration from '@/components/StoreHydration'
 import RestTimer from '@/components/session/RestTimer'
 import OnboardingFlow from '@/components/onboarding/OnboardingFlow'
@@ -11,7 +12,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         className="mx-auto max-w-lg px-4 pt-6"
         style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
       >
-        {children}
+        <PageTransition>{children}</PageTransition>
       </main>
       <BottomNav />
       {/* Global rest-timer pill — visible on any tab while resting */}

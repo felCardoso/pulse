@@ -64,7 +64,7 @@ export default function OnboardingFlow() {
     'w-full px-3 py-2 rounded-lg border border-border bg-secondary text-foreground text-center tabular-nums placeholder:text-muted-foreground focus:border-primary focus:outline-none'
 
   return (
-    <div className="fixed inset-0 z-[70] flex flex-col bg-background">
+    <div className="fixed inset-0 z-[70] flex flex-col bg-background animate-fade-in">
       <div className="mx-auto flex w-full max-w-lg flex-1 flex-col px-6 py-8">
         {/* Header: back + progress dots */}
         <div className="flex items-center justify-between">
@@ -99,7 +99,7 @@ export default function OnboardingFlow() {
 
         {/* Step 0 — Welcome */}
         {step === 0 && (
-          <div className="flex flex-1 flex-col justify-center gap-8">
+          <div key={step} className="flex flex-1 flex-col justify-center gap-8 animate-fade-in-up">
             <div className="flex flex-col items-center gap-4 text-center">
               <div className="flex h-20 w-20 items-center justify-center rounded-[22px] bg-[#1e293b]">
                 <Disc className="h-14 w-14 text-primary" strokeWidth={2} />
@@ -132,7 +132,7 @@ export default function OnboardingFlow() {
 
         {/* Step 1 — Weight */}
         {step === 1 && (
-          <div className="flex flex-1 flex-col justify-center gap-6">
+          <div key={step} className="flex flex-1 flex-col justify-center gap-6 animate-fade-in-up">
             <div>
               <h2 className="text-xl font-bold text-foreground">Seu peso atual</h2>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -177,7 +177,7 @@ export default function OnboardingFlow() {
 
         {/* Step 2 — First workout */}
         {step === 2 && (
-          <div className="flex flex-1 flex-col justify-center gap-6">
+          <div key={step} className="flex flex-1 flex-col justify-center gap-6 animate-fade-in-up">
             <div className="flex flex-col items-center gap-4 text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/15">
                 <Dumbbell className="h-8 w-8 text-primary" />

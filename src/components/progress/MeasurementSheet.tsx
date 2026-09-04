@@ -62,8 +62,8 @@ export default function MeasurementSheet({ onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end bg-black/50">
-      <div className="w-full bg-background rounded-t-2xl border-t border-border p-4 space-y-4 max-h-[85vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-end bg-black/50 animate-fade-in">
+      <div className="w-full bg-background rounded-t-2xl border-t border-border p-4 space-y-4 max-h-[85vh] overflow-y-auto animate-slide-up-sheet">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-foreground">Registrar medição</h2>
           <button

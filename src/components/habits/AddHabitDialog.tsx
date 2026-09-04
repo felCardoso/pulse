@@ -35,10 +35,10 @@ export default function AddHabitDialog({ onClose }: Props) {
 
   return createPortal(
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in" />
       <form
         onSubmit={handleSubmit}
-        className="relative w-full max-w-sm rounded-2xl border border-border bg-card p-5 shadow-xl space-y-4"
+        className="relative w-full max-w-sm rounded-2xl border border-border bg-card p-5 shadow-xl space-y-4 animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
         <div>
