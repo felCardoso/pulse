@@ -14,6 +14,14 @@ const config: CapacitorConfig = {
     url: PRODUCTION_URL,
     androidScheme: 'https',
   },
+  plugins: {
+    LocalNotifications: {
+      // Status-bar icons must be a plain white silhouette — Android ignores
+      // any other colors in the drawable and tints it with iconColor below.
+      smallIcon: 'ic_stat_notify',
+      iconColor: '#D4E400',
+    },
+  },
 }
 
 export default config
