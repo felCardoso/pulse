@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import localFont from 'next/font/local'
 import { Space_Grotesk } from 'next/font/google'
+import StatusBarSetup from '@/components/layout/StatusBarSetup'
 import './globals.css'
 
 const geistSans = localFont({
@@ -66,6 +67,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className={`${geistSans.variable} ${spaceGrotesk.variable} antialiased`}>
+        <StatusBarSetup />
         {children}
         <script
           dangerouslySetInnerHTML={{
