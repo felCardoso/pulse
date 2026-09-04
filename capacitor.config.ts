@@ -4,7 +4,7 @@ import type { CapacitorConfig } from '@capacitor/cli'
 // in a native shell instead of bundling a static export, so dynamic routes
 // and the existing deploy pipeline keep working unchanged. Point this at
 // your production domain before building; the placeholder below will 404.
-const PRODUCTION_URL = 'https://echo.vercel.app' // TODO: replace with your real production domain
+const PRODUCTION_URL = 'https://echo.monti.dev.br'
 
 const config: CapacitorConfig = {
   appId: 'com.echo.app',
