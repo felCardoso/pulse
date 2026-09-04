@@ -46,6 +46,8 @@ export interface ExerciseTemplate {
    * sound + configured duration — for training by feel, phone in pocket.
    */
   restPauseEnabled?: boolean
+  /** Worked one side at a time — counts double toward total training volume. */
+  unilateral?: boolean
 }
 
 export interface WorkoutTemplate {
@@ -93,6 +95,8 @@ export interface SessionExercise {
   warmupPercent?: number
   progression?: ProgressionConfig
   restPauseEnabled?: boolean
+  /** Worked one side at a time — counts double toward total training volume. */
+  unilateral?: boolean
 }
 
 export interface WorkoutSession {

@@ -43,8 +43,11 @@ export default function ExerciseTracker({
   }, [exercise.completed])
 
   const completeSet = useEchoStore((s) => s.completeSet)
+  const updateDoneSet = useEchoStore((s) => s.updateDoneSet)
   const completeTimeExercise = useEchoStore((s) => s.completeTimeExercise)
   const addWarmupSet = useEchoStore((s) => s.addWarmupSet)
+  const removeWarmupSet = useEchoStore((s) => s.removeWarmupSet)
+  const addExtraSet = useEchoStore((s) => s.addExtraSet)
   const replaceExerciseInActiveSession = useEchoStore((s) => s.replaceExerciseInActiveSession)
   const getLastSessionForExercise = useEchoStore((s) => s.getLastSessionForExercise)
   const getExerciseLibrary = useEchoStore((s) => s.getExerciseLibrary)
@@ -85,6 +88,15 @@ export default function ExerciseTracker({
       sound.setDone()
     }
     onSetDone(exercise.restSeconds, exercise.restPauseEnabled)
+  }
+
+  const handleSetUpdate = (
+    setId: string,
+    weight: number | undefined,
+    reps: number | undefined,
+    rir: number | undefined
+  ) => {
+    updateDoneSet(exercise.id, setId, { weight, reps, rir })
   }
 
   const handleTimeComplete = () => {
@@ -233,8 +245,21 @@ export default function ExerciseTracker({
                   previousReps={hintReps}
                   bodyweight={exercise.bodyweight}
                   onComplete={(w, r, rir) => handleSetComplete(set.id, w, r, rir)}
+                  onUpdate={(w, r, rir) => handleSetUpdate(set.id, w, r, rir)}
+                  onDelete={set.isWarmup ? () => removeWarmupSet(exercise.id, set.id) : undefined}
                 />
               ))}
+
+              {/* Rest-Pause: keep chaining bursts past the planned sets until failure */}
+              {exercise.restPauseEnabled && (
+                <button
+                  onClick={() => addExtraSet(exercise.id)}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Repeat className="h-3.5 w-3.5" />
+                  Adicionar burst
+                </button>
+              )}
             </>
           )}
 
