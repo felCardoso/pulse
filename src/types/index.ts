@@ -53,6 +53,8 @@ export interface ExerciseTemplate {
    * this flag across 3+ consecutive exercises forms a circuit.
    */
   supersetWithNext?: boolean
+  /** Worked one side at a time — counts double toward total training volume. */
+  unilateral?: boolean
 }
 
 export interface WorkoutTemplate {
@@ -102,6 +104,8 @@ export interface SessionExercise {
   restPauseEnabled?: boolean
   /** See ExerciseTemplate.supersetWithNext. */
   supersetWithNext?: boolean
+  /** Worked one side at a time — counts double toward total training volume. */
+  unilateral?: boolean
 }
 
 export interface WorkoutSession {

@@ -5,6 +5,7 @@ import { SkipForward, Plus, Minus } from 'lucide-react'
 import { useEchoStore } from '@/store/echo-store'
 import { useHaptic } from '@/hooks/useHaptic'
 import { useSound } from '@/hooks/useSound'
+import { useLongPress } from '@/hooks/useLongPress'
 import { requestNotificationPermission, notifyRestEnd } from '@/lib/notifications'
 import { formatRestTime } from '@/utils/format'
 
@@ -91,6 +92,18 @@ export default function RestTimer() {
     }
   }, [endsAt, isPaused]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const focusPress = useLongPress(
+    () => {
+      haptic.success()
+      stopRest()
+    },
+    () => {
+      if (isPaused) resumeRest()
+      else pauseRest()
+    },
+    550
+  )
+
   if (!rest) return null
 
   const timeLeft = isPaused
@@ -108,40 +121,53 @@ export default function RestTimer() {
     ? nextSet
       ? nextSet.isWarmup
         ? `${currentExercise.name} · aquecimento`
+        : isRestPause
+        ? `${currentExercise.name} · burst ${nextSet.setNumber}`
         : `${currentExercise.name} · série ${nextSet.setNumber}/${workingSetCount}`
       : currentExercise.name
     : undefined
 
   // Focus Mode: the interface goes away entirely — just a black screen and
-  // a giant countdown. Tap the number to pause/resume, tap anywhere else
-  // for +10s.
+  // a giant countdown. Tap the middle to pause/resume, hold it to skip the
+  // rest; small discrete buttons at the bottom adjust the time.
   if (focusModeEnabled) {
     return (
-      <div
-        className="fixed inset-0 z-[80] flex flex-col items-center justify-center bg-black"
-        onClick={() => adjustRest(10)}
-      >
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            if (isPaused) resumeRest()
-            else pauseRest()
-          }}
-          className="flex flex-col items-center gap-3 px-8 py-6"
+      <div className="fixed inset-0 z-[80] flex flex-col bg-black">
+        <div
+          {...focusPress}
+          className="flex w-full flex-1 select-none flex-col items-center justify-center gap-3 px-8"
+          style={{ touchAction: 'manipulation' }}
         >
           <span className="font-heading text-[5rem] font-bold leading-none tabular-nums text-primary sm:text-[7rem]">
             {formatRestTime(timeLeft)}
           </span>
           <span className="text-[11px] uppercase tracking-widest text-white/40">
-            {isPaused ? 'pausado · toque para retomar' : 'toque para pausar'}
+            {isPaused ? 'pausado · toque para retomar' : 'toque para pausar · segure para pular'}
           </span>
-        </button>
-        {nextLabel && (
-          <p className="mt-2 text-sm text-white/40">
-            Próxima: <span className="text-white/70">{nextLabel}</span>
-          </p>
-        )}
-        <p className="absolute bottom-10 text-[11px] text-white/25">Toque na tela · +10s</p>
+          {nextLabel && (
+            <p className="mt-2 text-sm text-white/40">
+              Próxima: <span className="text-white/70">{nextLabel}</span>
+            </p>
+          )}
+        </div>
+
+        {/* Discrete time adjustment — tucked at the bottom, out of the tap/hold zone */}
+        <div className="mb-10 flex w-full items-center justify-center gap-8">
+          <button
+            onClick={() => adjustRest(-10)}
+            className="flex h-11 w-11 items-center justify-center rounded-full text-white/30 transition-colors hover:text-white/70 active:scale-95"
+            aria-label="Diminuir 10 segundos"
+          >
+            <Minus className="h-5 w-5" />
+          </button>
+          <button
+            onClick={() => adjustRest(10)}
+            className="flex h-11 w-11 items-center justify-center rounded-full text-white/30 transition-colors hover:text-white/70 active:scale-95"
+            aria-label="Aumentar 10 segundos"
+          >
+            <Plus className="h-5 w-5" />
+          </button>
+        </div>
       </div>
     )
   }

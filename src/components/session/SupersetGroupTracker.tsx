@@ -35,6 +35,8 @@ export default function SupersetGroupTracker({ group, isCurrentGroup, weightUnit
   }, [allCompleted])
 
   const completeSet = useEchoStore((s) => s.completeSet)
+  const updateDoneSet = useEchoStore((s) => s.updateDoneSet)
+  const removeWarmupSet = useEchoStore((s) => s.removeWarmupSet)
   const completeTimeExercise = useEchoStore((s) => s.completeTimeExercise)
   const getLastSessionForExercise = useEchoStore((s) => s.getLastSessionForExercise)
   const sessions = useEchoStore((s) => s.sessions)
@@ -179,6 +181,8 @@ export default function SupersetGroupTracker({ group, isCurrentGroup, weightUnit
                       weightUnit={weightUnit}
                       bodyweight={exercise.bodyweight}
                       onComplete={(w, r, rir) => handleSetComplete(exercise, warm.id, w, r, rir, false)}
+                      onUpdate={(w, r, rir) => updateDoneSet(exercise.id, warm.id, { weight: w, reps: r, rir })}
+                      onDelete={() => removeWarmupSet(exercise.id, warm.id)}
                     />
                   </div>
                 )
@@ -229,6 +233,9 @@ export default function SupersetGroupTracker({ group, isCurrentGroup, weightUnit
                         bodyweight={exercise.bodyweight}
                         onComplete={(w, rr, rir) =>
                           handleSetComplete(exercise, set.id, w, rr, rir, isLastInRound)
+                        }
+                        onUpdate={(w, rr, rir) =>
+                          updateDoneSet(exercise.id, set.id, { weight: w, reps: rr, rir })
                         }
                       />
                     </div>

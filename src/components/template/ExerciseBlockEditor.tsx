@@ -2,6 +2,7 @@
 
 import { ChevronUp, ChevronDown, Trash2, Info, Repeat } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { NumberField } from '@/components/ui/number-field'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import type { ExerciseTemplate, ProgressionType } from '@/types'
@@ -157,12 +158,11 @@ export default function ExerciseBlockEditor({
       {exercise.trackBy === 'time' ? (
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">Tempo (minutos)</Label>
-          <Input
-            type="number"
-            inputMode="numeric"
+          <NumberField
             min={1}
             value={exercise.durationMinutes ?? 20}
-            onChange={(e) => onChange({ durationMinutes: parseInt(e.target.value) || 1 })}
+            fallback={exercise.durationMinutes ?? 20}
+            onChange={(n) => onChange({ durationMinutes: n })}
             className="h-9 text-center"
           />
           <p className="text-[11px] text-muted-foreground">
@@ -174,12 +174,11 @@ export default function ExerciseBlockEditor({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Séries</Label>
-              <Input
-                type="number"
-                inputMode="numeric"
+              <NumberField
                 min={1}
                 value={exercise.sets}
-                onChange={(e) => onChange({ sets: parseInt(e.target.value) || 1 })}
+                fallback={exercise.sets || 1}
+                onChange={(n) => onChange({ sets: n })}
                 className="h-9 text-center"
               />
             </div>
@@ -213,12 +212,11 @@ export default function ExerciseBlockEditor({
                 </button>
               ))}
               <div className="flex items-center gap-1">
-                <Input
-                  type="number"
-                  inputMode="numeric"
+                <NumberField
                   min={0}
                   value={exercise.restSeconds}
-                  onChange={(e) => onChange({ restSeconds: parseInt(e.target.value) || 0 })}
+                  fallback={exercise.restSeconds || 0}
+                  onChange={(n) => onChange({ restSeconds: n })}
                   className="h-7 w-16 text-center text-xs"
                 />
                 <span className="text-xs text-muted-foreground">s</span>
@@ -287,13 +285,12 @@ export default function ExerciseBlockEditor({
                 <Label className="text-[11px] text-muted-foreground shrink-0">
                   % da carga de trabalho
                 </Label>
-                <Input
-                  type="number"
-                  inputMode="numeric"
+                <NumberField
                   min={10}
                   max={95}
                   value={exercise.warmupPercent ?? DEFAULT_WARMUP_PERCENT}
-                  onChange={(e) => onChange({ warmupPercent: parseInt(e.target.value) || DEFAULT_WARMUP_PERCENT })}
+                  fallback={DEFAULT_WARMUP_PERCENT}
+                  onChange={(n) => onChange({ warmupPercent: n })}
                   className="h-8 w-20 text-center text-xs"
                 />
                 <span className="text-[11px] text-muted-foreground">%</span>
@@ -314,6 +311,22 @@ export default function ExerciseBlockEditor({
               <span className="block text-[11px] text-muted-foreground">
                 Troca o descanso configurado por um intervalo curto e silencioso de 15s,
                 avisado por vibração dupla em vez de som — pra encadear séries rápido.
+              </span>
+            </span>
+          </label>
+
+          {/* Unilateral */}
+          <label className="flex items-start gap-2.5 rounded-lg border border-border bg-secondary/40 px-3 py-2.5">
+            <input
+              type="checkbox"
+              checked={!!exercise.unilateral}
+              onChange={(e) => onChange({ unilateral: e.target.checked })}
+              className="mt-0.5 h-4 w-4 accent-primary"
+            />
+            <span>
+              <span className="block text-xs font-medium text-foreground">Unilateral</span>
+              <span className="block text-[11px] text-muted-foreground">
+                Um lado de cada vez — conta em dobro no volume total do treino.
               </span>
             </span>
           </label>
@@ -349,17 +362,16 @@ export default function ExerciseBlockEditor({
               <div className="flex flex-wrap items-center gap-3 pt-1">
                 <div className="flex items-center gap-1.5">
                   <Label className="text-[11px] text-muted-foreground shrink-0">Incremento</Label>
-                  <Input
-                    type="number"
-                    inputMode="decimal"
+                  <NumberField
                     step="0.5"
                     min={0}
                     value={exercise.progression?.step ?? DEFAULT_PROGRESSION_STEP}
-                    onChange={(e) =>
+                    fallback={DEFAULT_PROGRESSION_STEP}
+                    onChange={(n) =>
                       onChange({
                         progression: {
                           type: progressionType,
-                          step: parseFloat(e.target.value) || DEFAULT_PROGRESSION_STEP,
+                          step: n,
                           repsFrom: exercise.progression?.repsFrom,
                           repsTo: exercise.progression?.repsTo,
                         },
@@ -373,17 +385,16 @@ export default function ExerciseBlockEditor({
                   <>
                     <div className="flex items-center gap-1.5">
                       <Label className="text-[11px] text-muted-foreground shrink-0">Reps de</Label>
-                      <Input
-                        type="number"
-                        inputMode="numeric"
+                      <NumberField
                         min={1}
                         value={exercise.progression?.repsFrom ?? DEFAULT_REPS_FROM}
-                        onChange={(e) =>
+                        fallback={DEFAULT_REPS_FROM}
+                        onChange={(n) =>
                           onChange({
                             progression: {
                               type: 'double',
                               step: exercise.progression?.step ?? DEFAULT_PROGRESSION_STEP,
-                              repsFrom: parseInt(e.target.value) || DEFAULT_REPS_FROM,
+                              repsFrom: n,
                               repsTo: exercise.progression?.repsTo ?? DEFAULT_REPS_TO,
                             },
                           })
@@ -393,18 +404,17 @@ export default function ExerciseBlockEditor({
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Label className="text-[11px] text-muted-foreground shrink-0">até</Label>
-                      <Input
-                        type="number"
-                        inputMode="numeric"
+                      <NumberField
                         min={1}
                         value={exercise.progression?.repsTo ?? DEFAULT_REPS_TO}
-                        onChange={(e) =>
+                        fallback={DEFAULT_REPS_TO}
+                        onChange={(n) =>
                           onChange({
                             progression: {
                               type: 'double',
                               step: exercise.progression?.step ?? DEFAULT_PROGRESSION_STEP,
                               repsFrom: exercise.progression?.repsFrom ?? DEFAULT_REPS_FROM,
-                              repsTo: parseInt(e.target.value) || DEFAULT_REPS_TO,
+                              repsTo: n,
                             },
                           })
                         }

@@ -101,9 +101,15 @@ interface EchoStore {
   addExerciseToActiveSession: (exercise: Omit<SessionExercise, 'id' | 'order'>) => void
   /** Returns true when this set just set a new personal record. */
   completeSet: (exerciseId: string, setId: string, weight: number | undefined, reps: number | undefined, rir?: number) => boolean
+  /** Patches an already-completed set (weight/reps/RIR) without touching `done`/`doneAt`. */
+  updateDoneSet: (exerciseId: string, setId: string, data: Partial<Pick<SetLog, 'weight' | 'reps' | 'rir'>>) => void
   completeTimeExercise: (exerciseId: string, minutes: number) => void
   /** Inserts a warm-up set before the working sets, weight pre-filled from history. */
   addWarmupSet: (exerciseId: string) => void
+  /** Removes a warm-up set the user added (or an auto one they don't want). */
+  removeWarmupSet: (exerciseId: string, setId: string) => void
+  /** Rest-Pause: appends one more working set (a "burst") after the planned ones. */
+  addExtraSet: (exerciseId: string) => void
   replaceExerciseInActiveSession: (exerciseId: string, newName: string) => void
   finishWorkout: (notes?: string) => WorkoutSession | null
   cancelWorkout: () => void
@@ -164,6 +170,7 @@ function buildSessionExercises(exercises: ExerciseTemplate[]): SessionExercise[]
     progression: ex.progression,
     restPauseEnabled: ex.restPauseEnabled,
     supersetWithNext: ex.supersetWithNext,
+    unilateral: ex.unilateral,
     // Time-based exercises log a single duration, not a set of reps.
     sets: ex.trackBy === 'time'
       ? []
@@ -300,10 +307,12 @@ export const useEchoStore = create<EchoStore>()(
         const now = new Date().toISOString()
         let exerciseName = ''
         let isWarmupSet = false
+        let isUnilateral = false
 
         const updatedExercises = state.activeSession.exercises.map((ex) => {
           if (ex.id !== exerciseId) return ex
           exerciseName = ex.name
+          isUnilateral = !!ex.unilateral
           const updatedSets = ex.sets.map((s) => {
             if (s.id !== setId) return s
             isWarmupSet = !!s.isWarmup
@@ -319,7 +328,7 @@ export const useEchoStore = create<EchoStore>()(
         const newRecords = { ...state.personalRecords }
         if (!isWarmupSet && exerciseName && weight != null && reps != null) {
           const key = normalizeExName(exerciseName)
-          const volume = weight * reps
+          const volume = weight * reps * (isUnilateral ? 2 : 1)
           const existing = newRecords[key]
           if (!existing || volume > existing.maxVolume || weight > existing.maxWeight) {
             isPR = true
@@ -341,6 +350,24 @@ export const useEchoStore = create<EchoStore>()(
         }))
 
         return isPR
+      },
+
+      updateDoneSet: (exerciseId, setId, data) => {
+        const state = get()
+        if (!state.activeSession) return
+        set({
+          activeSession: {
+            ...state.activeSession,
+            exercises: state.activeSession.exercises.map((ex) =>
+              ex.id !== exerciseId
+                ? ex
+                : {
+                    ...ex,
+                    sets: ex.sets.map((s) => (s.id === setId ? { ...s, ...data } : s)),
+                  }
+            ),
+          },
+        })
       },
 
       completeTimeExercise: (exerciseId, minutes) => {
@@ -390,6 +417,51 @@ export const useEchoStore = create<EchoStore>()(
                     sets: [...e.sets.slice(0, insertAt), warmupSet, ...e.sets.slice(insertAt)],
                   }
                 }),
+              }
+            : null,
+        }))
+      },
+
+      removeWarmupSet: (exerciseId, setId) => {
+        const state = get()
+        if (!state.activeSession) return
+        set({
+          activeSession: {
+            ...state.activeSession,
+            exercises: state.activeSession.exercises.map((ex) =>
+              ex.id !== exerciseId
+                ? ex
+                : { ...ex, sets: ex.sets.filter((s) => !(s.id === setId && s.isWarmup)) }
+            ),
+          },
+        })
+      },
+
+      addExtraSet: (exerciseId) => {
+        const state = get()
+        if (!state.activeSession) return
+        const ex = state.activeSession.exercises.find((e) => e.id === exerciseId)
+        if (!ex) return
+
+        const workingSets = ex.sets.filter((s) => !s.isWarmup)
+        const lastDone = [...workingSets].reverse().find((s) => s.done)
+        const extraSet: SetLog = {
+          id: uuid(),
+          setNumber: workingSets.length + 1,
+          weight: lastDone?.weight,
+          reps: undefined,
+          done: false,
+        }
+
+        set((s) => ({
+          activeSession: s.activeSession
+            ? {
+                ...s.activeSession,
+                exercises: s.activeSession.exercises.map((e) =>
+                  e.id !== exerciseId
+                    ? e
+                    : { ...e, sets: [...e.sets, extraSet], completed: false }
+                ),
               }
             : null,
         }))

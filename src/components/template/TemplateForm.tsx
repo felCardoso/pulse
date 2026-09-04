@@ -132,6 +132,7 @@ export default function TemplateForm({ existing }: Props) {
       progression: ex.progression,
       restPauseEnabled: ex.restPauseEnabled,
       supersetWithNext: ex.supersetWithNext,
+      unilateral: ex.unilateral,
     }))
 
     if (existing) {
