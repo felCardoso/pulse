@@ -115,7 +115,7 @@ export default function ProgressPhotos() {
       {/* Full-screen viewer */}
       {viewing && (
         <div
-          className="fixed inset-0 z-[60] flex flex-col bg-black/95"
+          className="fixed inset-0 z-[60] flex flex-col bg-black/95 animate-fade-in"
           onClick={() => setViewing(null)}
         >
           <div className="flex items-center justify-between p-4">

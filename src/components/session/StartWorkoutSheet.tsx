@@ -38,9 +38,9 @@ export default function StartWorkoutSheet({ onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm animate-fade-in" onClick={onClose}>
       <div
-        className="w-full max-w-lg max-h-[80vh] overflow-y-auto rounded-t-3xl border-t border-border bg-background px-6 pb-safe pt-6 space-y-5"
+        className="w-full max-w-lg max-h-[80vh] overflow-y-auto rounded-t-3xl border-t border-border bg-background px-6 pb-safe pt-6 space-y-5 animate-slide-up-sheet"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">

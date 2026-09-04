@@ -73,8 +73,8 @@ export default function AddExerciseSheet({ onAdd, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-t-3xl border-t border-border bg-background px-6 pb-safe pt-6 space-y-5">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+      <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-t-3xl border-t border-border bg-background px-6 pb-safe pt-6 space-y-5 animate-slide-up-sheet">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-foreground">Adicionar exercício</h3>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
