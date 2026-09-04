@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronUp, ChevronDown, Trash2, Info } from 'lucide-react'
+import { ChevronUp, ChevronDown, Trash2, Info, Repeat } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { NumberField } from '@/components/ui/number-field'
 import { Label } from '@/components/ui/label'
@@ -66,6 +66,7 @@ export default function ExerciseBlockEditor({
   onMoveUp,
   onMoveDown,
 }: Props) {
+  const isLast = index === total - 1
   const progressionType = exercise.progression?.type ?? 'none'
   const selectedProgression = PROGRESSION_OPTIONS.find((p) => p.value === progressionType)
 
@@ -222,6 +223,29 @@ export default function ExerciseBlockEditor({
               </div>
             </div>
           </div>
+
+          {/* Superset/circuito — encadeia com o próximo exercício */}
+          {!isLast && (
+            <label className="flex items-start gap-2.5 rounded-lg border border-border bg-secondary/40 px-3 py-2.5">
+              <input
+                type="checkbox"
+                checked={!!exercise.supersetWithNext}
+                onChange={(e) => onChange({ supersetWithNext: e.target.checked })}
+                className="mt-0.5 h-4 w-4 accent-primary"
+              />
+              <span>
+                <span className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+                  <Repeat className="h-3 w-3 text-primary" />
+                  Superset com o próximo
+                </span>
+                <span className="block text-[11px] text-muted-foreground">
+                  Alterna com o próximo exercício, sem descanso entre eles — o descanso
+                  configurado aqui só entra depois de completar a rodada dos dois.
+                  Encadeie mais de um para formar um circuito.
+                </span>
+              </span>
+            </label>
+          )}
 
           {/* Peso corporal */}
           <label className="flex items-start gap-2.5 rounded-lg border border-border bg-secondary/40 px-3 py-2.5">

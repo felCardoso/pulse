@@ -169,6 +169,7 @@ function buildSessionExercises(exercises: ExerciseTemplate[]): SessionExercise[]
     warmupPercent: ex.warmupPercent,
     progression: ex.progression,
     restPauseEnabled: ex.restPauseEnabled,
+    supersetWithNext: ex.supersetWithNext,
     unilateral: ex.unilateral,
     // Time-based exercises log a single duration, not a set of reps.
     sets: ex.trackBy === 'time'

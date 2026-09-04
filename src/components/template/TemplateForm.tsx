@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus } from 'lucide-react'
+import { Plus, Repeat } from 'lucide-react'
 import { v4 as uuid } from 'uuid'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -50,8 +50,31 @@ export default function TemplateForm({ existing }: Props) {
     setExercises((prev) => prev.map((e) => (e._key === key ? { ...e, ...data } : e)))
   }
 
+  // The last exercise can never be linked to a next one that doesn't
+  // exist — clear a dangling flag whenever the list's end changes.
+  const clampTrailingSuperset = (arr: ExerciseDraft[]): ExerciseDraft[] =>
+    arr.map((e, i) => ({
+      ...e,
+      order: i,
+      supersetWithNext: i === arr.length - 1 ? false : e.supersetWithNext,
+    }))
+
   const deleteExercise = (key: string) => {
-    setExercises((prev) => prev.filter((e) => e._key !== key).map((e, i) => ({ ...e, order: i })))
+    setExercises((prev) => {
+      const idx = prev.findIndex((e) => e._key === key)
+      if (idx === -1) return prev
+      const next = prev.filter((e) => e._key !== key)
+      // The exercise right before the deleted one now points at a
+      // different neighbor — its link (if any) no longer means what it
+      // did, so it must not silently re-pair with whoever moved up.
+      if (idx > 0) {
+        const beforeKey = prev[idx - 1]._key
+        return clampTrailingSuperset(
+          next.map((e) => (e._key === beforeKey ? { ...e, supersetWithNext: false } : e))
+        )
+      }
+      return clampTrailingSuperset(next)
+    })
   }
 
   const moveExercise = (key: string, direction: 'up' | 'down') => {
@@ -62,7 +85,14 @@ export default function TemplateForm({ existing }: Props) {
       if (next < 0 || next >= prev.length) return prev
       const arr = [...prev]
       ;[arr[idx], arr[next]] = [arr[next], arr[idx]]
-      return arr.map((e, i) => ({ ...e, order: i }))
+      // Every item whose immediate neighbor identity changed loses its
+      // link: the two swapped items themselves, and whichever item sat
+      // right before the swap.
+      const p = Math.min(idx, next)
+      for (const i of [p - 1, p, p + 1]) {
+        if (i >= 0 && i < arr.length) arr[i] = { ...arr[i], supersetWithNext: false }
+      }
+      return clampTrailingSuperset(arr)
     })
   }
 
@@ -101,6 +131,7 @@ export default function TemplateForm({ existing }: Props) {
       warmupPercent: ex.warmupPercent,
       progression: ex.progression,
       restPauseEnabled: ex.restPauseEnabled,
+      supersetWithNext: ex.supersetWithNext,
       unilateral: ex.unilateral,
     }))
 
@@ -151,17 +182,26 @@ export default function TemplateForm({ existing }: Props) {
         </div>
 
         {exercises.map((ex, i) => (
-          <ExerciseBlockEditor
-            key={ex._key}
-            exercise={ex}
-            index={i}
-            total={exercises.length}
-            libraryId={libraryId}
-            onChange={(data) => updateExercise(ex._key, data)}
-            onDelete={() => deleteExercise(ex._key)}
-            onMoveUp={() => moveExercise(ex._key, 'up')}
-            onMoveDown={() => moveExercise(ex._key, 'down')}
-          />
+          <div key={ex._key}>
+            <ExerciseBlockEditor
+              exercise={ex}
+              index={i}
+              total={exercises.length}
+              libraryId={libraryId}
+              onChange={(data) => updateExercise(ex._key, data)}
+              onDelete={() => deleteExercise(ex._key)}
+              onMoveUp={() => moveExercise(ex._key, 'up')}
+              onMoveDown={() => moveExercise(ex._key, 'down')}
+            />
+            {ex.supersetWithNext && (
+              <div className="flex items-center gap-2 py-1.5 pl-4">
+                <Repeat className="h-3 w-3 text-primary" />
+                <span className="text-[11px] font-medium text-primary">
+                  Superset — sem descanso até aqui
+                </span>
+              </div>
+            )}
+          </div>
         ))}
 
         <button
