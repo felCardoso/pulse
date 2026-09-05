@@ -38,6 +38,7 @@ export default function ConfiguracoesPage() {
   const progressPhotos = useEchoStore((s) => s.progressPhotos)
   const weeklySchedule = useEchoStore((s) => s.weeklySchedule)
   const habits = useEchoStore((s) => s.habits)
+  const fichas = useEchoStore((s) => s.fichas)
   const importRef = useRef<HTMLInputElement>(null)
   const [importError, setImportError] = useState<string | null>(null)
   const [importSuccess, setImportSuccess] = useState(false)
@@ -60,6 +61,7 @@ export default function ConfiguracoesPage() {
       progressPhotos,
       weeklySchedule,
       habits,
+      fichas,
     })
   }
 
@@ -82,6 +84,7 @@ export default function ConfiguracoesPage() {
           progressPhotos: data.progressPhotos ?? [],
           weeklySchedule: data.weeklySchedule ?? {},
           habits: data.habits ?? [],
+          fichas: data.fichas ?? [],
         })
         setImportSuccess(true)
       } catch {
@@ -103,6 +106,7 @@ export default function ConfiguracoesPage() {
       progressPhotos: [],
       weeklySchedule: {},
       habits: [],
+      fichas: [],
     })
     setShowClearDialog(false)
   }
