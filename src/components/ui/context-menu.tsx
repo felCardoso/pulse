@@ -19,6 +19,10 @@ interface Props {
 export default function ContextMenu({ items, children, className }: Props) {
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
   const longPress = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Long-pressing to open the menu still fires a trailing 'click' on touch
+  // devices when the finger lifts — suppress just that one click so it
+  // doesn't also trigger whatever onClick the wrapped content has.
+  const openedViaLongPress = useRef(false)
 
   const openAt = (x: number, y: number) => {
     // Clamp so the menu stays inside the viewport.
@@ -37,7 +41,10 @@ export default function ContextMenu({ items, children, className }: Props) {
   // Long-press as a touch-friendly fallback for right-click.
   const handleTouchStart = (e: React.TouchEvent) => {
     const t = e.touches[0]
-    longPress.current = setTimeout(() => openAt(t.clientX, t.clientY), 500)
+    longPress.current = setTimeout(() => {
+      openedViaLongPress.current = true
+      openAt(t.clientX, t.clientY)
+    }, 500)
   }
   const cancelLongPress = () => {
     if (longPress.current) {
@@ -71,6 +78,13 @@ export default function ContextMenu({ items, children, className }: Props) {
         onTouchStart={handleTouchStart}
         onTouchEnd={cancelLongPress}
         onTouchMove={cancelLongPress}
+        onClickCapture={(e) => {
+          if (openedViaLongPress.current) {
+            openedViaLongPress.current = false
+            e.stopPropagation()
+            e.preventDefault()
+          }
+        }}
         className={className}
       >
         {children}

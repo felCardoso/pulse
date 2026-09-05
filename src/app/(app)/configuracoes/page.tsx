@@ -9,6 +9,13 @@ import { cn } from '@/lib/utils'
 import { useEchoStore } from '@/store/echo-store'
 import { exportBackup, parseBackup } from '@/lib/backup'
 import ClearDataDialog from '@/components/settings/ClearDataDialog'
+import type { AppSettings } from '@/types'
+
+const THEME_OPTIONS: { label: string; value: AppSettings['themeMode'] }[] = [
+  { label: 'Claro', value: 'light' },
+  { label: 'Escuro', value: 'dark' },
+  { label: 'Sistema', value: 'system' },
+]
 
 const REST_OPTIONS = [
   { label: '30s', value: 30 },
@@ -38,6 +45,7 @@ export default function ConfiguracoesPage() {
   const progressPhotos = useEchoStore((s) => s.progressPhotos)
   const weeklySchedule = useEchoStore((s) => s.weeklySchedule)
   const habits = useEchoStore((s) => s.habits)
+  const fichas = useEchoStore((s) => s.fichas)
   const importRef = useRef<HTMLInputElement>(null)
   const [importError, setImportError] = useState<string | null>(null)
   const [importSuccess, setImportSuccess] = useState(false)
@@ -60,6 +68,7 @@ export default function ConfiguracoesPage() {
       progressPhotos,
       weeklySchedule,
       habits,
+      fichas,
     })
   }
 
@@ -82,6 +91,7 @@ export default function ConfiguracoesPage() {
           progressPhotos: data.progressPhotos ?? [],
           weeklySchedule: data.weeklySchedule ?? {},
           habits: data.habits ?? [],
+          fichas: data.fichas ?? [],
         })
         setImportSuccess(true)
       } catch {
@@ -103,6 +113,7 @@ export default function ConfiguracoesPage() {
       progressPhotos: [],
       weeklySchedule: {},
       habits: [],
+      fichas: [],
     })
     setShowClearDialog(false)
   }
@@ -162,7 +173,27 @@ export default function ConfiguracoesPage() {
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               Aparência
             </h2>
-            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+            <div className="rounded-xl border border-border bg-card p-4 space-y-4">
+              <div className="space-y-2">
+                <Label>Tema</Label>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {THEME_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => updateSettings({ themeMode: opt.value })}
+                      className={cn(
+                        'rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors',
+                        settings.themeMode === opt.value
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="flex items-center justify-between">
                 <Label>Cor primária</Label>
                 <div

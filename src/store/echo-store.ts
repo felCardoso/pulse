@@ -3,7 +3,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { v4 as uuid } from 'uuid'
-import { getLocalDateStr } from '@/utils/format'
+import { getLocalDateStr, parseLocalDateStr } from '@/utils/format'
 import type {
   WorkoutTemplate,
   ExerciseTemplate,
@@ -16,6 +16,7 @@ import type {
   ProgressPhoto,
   Habit,
   HabitFrequency,
+  Ficha,
 } from '@/types'
 
 /** Default auto warm-up: 60% of the working weight (40% lighter), 8 reps. */
@@ -48,6 +49,7 @@ function todayStr(): string {
 
 const DEFAULT_SETTINGS: AppSettings = {
   primaryHue: 64,
+  themeMode: 'dark',
   weightUnit: 'kg',
   defaultRestSeconds: 90,
   hapticEnabled: true,
@@ -60,6 +62,7 @@ const DEFAULT_SETTINGS: AppSettings = {
 
 interface EchoStore {
   templates: WorkoutTemplate[]
+  fichas: Ficha[]
   sessions: WorkoutSession[]
   activeSession: WorkoutSession | null
   personalRecords: Record<string, PersonalRecord>
@@ -95,6 +98,12 @@ interface EchoStore {
   updateTemplate: (id: string, data: Partial<Omit<WorkoutTemplate, 'id' | 'createdAt'>>) => void
   deleteTemplate: (id: string) => void
 
+  // Ficha actions (a Ficha groups several workout templates into one program/split)
+  addFicha: (name: string, description?: string) => Ficha
+  updateFicha: (id: string, data: Partial<Omit<Ficha, 'id' | 'createdAt'>>) => void
+  /** Unlinks member templates (fichaId cleared) instead of deleting them. */
+  deleteFicha: (id: string) => void
+
   // Session actions
   startWorkout: (template: WorkoutTemplate | null, name?: string) => WorkoutSession
   updateActiveSession: (data: Partial<WorkoutSession>) => void
@@ -129,14 +138,32 @@ interface EchoStore {
 
   // Habit actions
   addHabit: (name: string, frequency?: HabitFrequency) => Habit
+  updateHabit: (
+    id: string,
+    data: Partial<Pick<Habit, 'name' | 'frequency' | 'eternal' | 'showOnHome'>>
+  ) => void
   deleteHabit: (id: string) => void
   toggleHabitToday: (id: string) => void
+  /** Toggles a specific date (retroactive check-in) — used by the habit's mini-calendar. */
+  toggleHabitDate: (id: string, dateStr: string) => void
   getHabitProgress: (id: string) => {
     count: number
     target: number
     percentage: number
     isRoutine: boolean
     checkedToday: boolean
+  }
+  /**
+   * Current consecutive-day streak, with one missed required day forgiven
+   * per calendar month (a "streak freeze") — applied automatically, most
+   * recent month first, when walking back from today.
+   */
+  getHabitStreak: (id: string) => number
+  /** Monthly progress for an "eternal" habit — resets every calendar month. */
+  getHabitMonthProgress: (id: string) => {
+    count: number
+    target: number
+    percentage: number
   }
 
   // Rest timer actions
@@ -217,6 +244,7 @@ export const useEchoStore = create<EchoStore>()(
   persist(
     (set, get) => ({
       templates: [],
+      fichas: [],
       sessions: [],
       activeSession: null,
       personalRecords: {},
@@ -251,6 +279,34 @@ export const useEchoStore = create<EchoStore>()(
 
       deleteTemplate: (id) => {
         set((s) => ({ templates: s.templates.filter((t) => t.id !== id) }))
+      },
+
+      addFicha: (name, description) => {
+        const now = new Date().toISOString()
+        const ficha: Ficha = {
+          id: uuid(),
+          name: name.trim(),
+          description: description?.trim() || undefined,
+          createdAt: now,
+          updatedAt: now,
+        }
+        set((s) => ({ fichas: [...s.fichas, ficha] }))
+        return ficha
+      },
+
+      updateFicha: (id, data) => {
+        set((s) => ({
+          fichas: s.fichas.map((f) =>
+            f.id === id ? { ...f, ...data, updatedAt: new Date().toISOString() } : f
+          ),
+        }))
+      },
+
+      deleteFicha: (id) => {
+        set((s) => ({
+          fichas: s.fichas.filter((f) => f.id !== id),
+          templates: s.templates.map((t) => (t.fichaId === id ? { ...t, fichaId: undefined } : t)),
+        }))
       },
 
       startWorkout: (template, name) => {
@@ -611,23 +667,33 @@ export const useEchoStore = create<EchoStore>()(
         return habit
       },
 
+      updateHabit: (id, data) => {
+        set((s) => ({
+          habits: s.habits.map((h) => (h.id === id ? { ...h, ...data } : h)),
+        }))
+      },
+
       deleteHabit: (id) => {
         set((s) => ({ habits: s.habits.filter((h) => h.id !== id) }))
       },
 
       toggleHabitToday: (id) => {
-        const today = todayStr()
+        get().toggleHabitDate(id, todayStr())
+      },
+
+      toggleHabitDate: (id, dateStr) => {
         const habit = get().habits.find((h) => h.id === id)
-        if (!habit || !countsForHabit(today, habit.frequency)) return
+        if (!habit || !countsForHabit(dateStr, habit.frequency)) return
+        if (dateStr > todayStr()) return
         set((s) => ({
           habits: s.habits.map((h) => {
             if (h.id !== id) return h
-            const checked = h.completions.includes(today)
+            const checked = h.completions.includes(dateStr)
             return {
               ...h,
               completions: checked
-                ? h.completions.filter((d) => d !== today)
-                : [...h.completions, today],
+                ? h.completions.filter((d) => d !== dateStr)
+                : [...h.completions, dateStr],
             }
           }),
         }))
@@ -644,6 +710,72 @@ export const useEchoStore = create<EchoStore>()(
           percentage: Math.min(100, (count / ROUTINE_GOAL) * 100),
           isRoutine: count >= ROUTINE_GOAL,
           checkedToday: habit ? habit.completions.includes(todayStr()) : false,
+        }
+      },
+
+      getHabitStreak: (id) => {
+        const habit = get().habits.find((h) => h.id === id)
+        if (!habit) return 0
+
+        const today = todayStr()
+        const checkedToday = habit.completions.includes(today)
+        const todayRequired = countsForHabit(today, habit.frequency)
+
+        // Today isn't over yet — if it's required but not yet checked, that
+        // doesn't break the streak, it just isn't counted yet. Start from
+        // yesterday instead.
+        const cursor = parseLocalDateStr(today)
+        if (todayRequired && !checkedToday) cursor.setDate(cursor.getDate() - 1)
+
+        // habit.createdAt is a UTC ISO timestamp — convert to a local
+        // YYYY-MM-DD before parsing, not a raw slice (which stays in UTC
+        // and can land on the wrong local day for negative-offset zones).
+        const createdAt = parseLocalDateStr(getLocalDateStr(new Date(habit.createdAt)))
+        const freezedMonths = new Set<string>()
+        let streak = 0
+
+        // Safety cap — no habit realistically runs longer than this.
+        for (let i = 0; i < 3650 && cursor >= createdAt; i++) {
+          const dateStr = getLocalDateStr(cursor)
+          if (countsForHabit(dateStr, habit.frequency)) {
+            if (habit.completions.includes(dateStr)) {
+              streak++
+            } else {
+              const monthKey = dateStr.slice(0, 7)
+              if (freezedMonths.has(monthKey)) break
+              // Streak freeze: one missed required day forgiven per month.
+              freezedMonths.add(monthKey)
+              streak++
+            }
+          }
+          cursor.setDate(cursor.getDate() - 1)
+        }
+        return streak
+      },
+
+      getHabitMonthProgress: (id) => {
+        const habit = get().habits.find((h) => h.id === id)
+        if (!habit) return { count: 0, target: 0, percentage: 0 }
+
+        const now = new Date()
+        const year = now.getFullYear()
+        const month = now.getMonth()
+        const daysInMonth = new Date(year, month + 1, 0).getDate()
+
+        let target = 0
+        let count = 0
+        for (let day = 1; day <= daysInMonth; day++) {
+          const d = new Date(year, month, day)
+          const dateStr = getLocalDateStr(d)
+          if (!countsForHabit(dateStr, habit.frequency)) continue
+          target++
+          if (habit.completions.includes(dateStr)) count++
+        }
+
+        return {
+          count,
+          target,
+          percentage: target > 0 ? Math.min(100, (count / target) * 100) : 0,
         }
       },
 
@@ -702,6 +834,19 @@ export const useEchoStore = create<EchoStore>()(
     {
       name: 'echo-store',
       skipHydration: true,
+      // Zustand's default merge replaces `settings` wholesale with whatever
+      // was persisted — so a settings object saved before a new field (e.g.
+      // themeMode) existed would permanently lack it after rehydrating,
+      // even though DEFAULT_SETTINGS has since been updated. Merge settings
+      // one level deep instead, so new default fields still apply.
+      merge: (persistedState, currentState) => {
+        const persisted = (persistedState ?? {}) as Partial<EchoStore>
+        return {
+          ...currentState,
+          ...persisted,
+          settings: { ...currentState.settings, ...persisted.settings },
+        }
+      },
     }
   )
 )

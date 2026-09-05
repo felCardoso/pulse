@@ -64,6 +64,23 @@ export interface WorkoutTemplate {
   exercises: ExerciseTemplate[]
   createdAt: string
   updatedAt: string
+  /** Groups this workout under a Ficha (training program/split). At most one — see Ficha. */
+  fichaId?: string
+}
+
+/**
+ * A Ficha groups several WorkoutTemplates into one program/split (e.g. "Push
+ * Pull Legs" containing Treino A/B/C). A workout belongs to at most one
+ * ficha; the "next suggested workout" rotation cycles only within the
+ * ficha of whichever workout was done last, instead of across every saved
+ * template.
+ */
+export interface Ficha {
+  id: string
+  name: string
+  description?: string
+  createdAt: string
+  updatedAt: string
 }
 
 export interface SetLog {
@@ -131,6 +148,8 @@ export interface PersonalRecord {
 
 export interface AppSettings {
   primaryHue: number
+  /** 'system' follows the OS light/dark preference. Defaults to 'dark' — the app was designed dark-first. */
+  themeMode: 'light' | 'dark' | 'system'
   weightUnit: 'kg' | 'lbs'
   defaultRestSeconds: number
   hapticEnabled: boolean
@@ -178,4 +197,11 @@ export interface Habit {
   frequency: HabitFrequency
   /** Dates (YYYY-MM-DD) checked off. */
   completions: string[]
+  /**
+   * Eternal routine: has no 30-day goal/end — it's an ongoing habit tracked
+   * by a monthly progress bar (resets every calendar month) instead.
+   */
+  eternal?: boolean
+  /** Whether this habit shows in the Início "Rotinas de hoje" widget. Defaults to true. */
+  showOnHome?: boolean
 }

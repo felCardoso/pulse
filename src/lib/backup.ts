@@ -6,6 +6,7 @@ import type {
   BodyMeasurement,
   ProgressPhoto,
   Habit,
+  Ficha,
 } from '@/types'
 import { getLocalDateStr } from '@/utils/format'
 
@@ -22,13 +23,15 @@ interface BackupData {
   progressPhotos?: ProgressPhoto[]
   weeklySchedule?: Record<string, string>
   habits?: Habit[]
+  // v3 fields (optional so v1/v2 backups still import)
+  fichas?: Ficha[]
 }
 
 export type BackupPayload = Omit<BackupData, 'version' | 'exportedAt'>
 
 export function exportBackup(data: BackupPayload) {
   const backup: BackupData = {
-    version: 2,
+    version: 3,
     exportedAt: new Date().toISOString(),
     ...data,
   }
@@ -58,5 +61,6 @@ export function parseBackup(json: string): BackupPayload {
     progressPhotos: data.progressPhotos ?? [],
     weeklySchedule: data.weeklySchedule ?? {},
     habits: data.habits ?? [],
+    fichas: data.fichas ?? [],
   }
 }
