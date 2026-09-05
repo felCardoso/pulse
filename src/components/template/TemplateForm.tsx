@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Plus, Repeat } from 'lucide-react'
 import { v4 as uuid } from 'uuid'
 import { Button } from '@/components/ui/button'
@@ -9,8 +9,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import ExerciseBlockEditor from './ExerciseBlockEditor'
 import CSVImport from './CSVImport'
+import FichaDialog from './FichaDialog'
 import { useEchoStore } from '@/store/echo-store'
 import type { ExerciseTemplate, WorkoutTemplate } from '@/types'
+
+const NEW_FICHA_VALUE = '__new__'
 
 type ExerciseDraft = Omit<ExerciseTemplate, 'id'> & { _key: string }
 
@@ -32,9 +35,11 @@ interface Props {
 
 export default function TemplateForm({ existing }: Props) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const addTemplate = useEchoStore((s) => s.addTemplate)
   const updateTemplate = useEchoStore((s) => s.updateTemplate)
   const getExerciseLibrary = useEchoStore((s) => s.getExerciseLibrary)
+  const fichas = useEchoStore((s) => s.fichas)
 
   const [name, setName] = useState(existing?.name ?? '')
   const [description, setDescription] = useState(existing?.description ?? '')
@@ -42,6 +47,18 @@ export default function TemplateForm({ existing }: Props) {
     existing?.exercises.map((e) => ({ ...e, _key: e.id })) ?? [defaultExercise(0)]
   )
   const [nameError, setNameError] = useState('')
+  const [fichaId, setFichaId] = useState<string | undefined>(
+    existing?.fichaId ?? searchParams.get('fichaId') ?? undefined
+  )
+  const [creatingFicha, setCreatingFicha] = useState(false)
+
+  const handleFichaSelect = (value: string) => {
+    if (value === NEW_FICHA_VALUE) {
+      setCreatingFicha(true)
+      return
+    }
+    setFichaId(value || undefined)
+  }
 
   const library = getExerciseLibrary()
   const libraryId = 'exercise-library'
@@ -136,9 +153,9 @@ export default function TemplateForm({ existing }: Props) {
     }))
 
     if (existing) {
-      updateTemplate(existing.id, { name: name.trim(), description: description.trim() || undefined, exercises: cleanExercises })
+      updateTemplate(existing.id, { name: name.trim(), description: description.trim() || undefined, exercises: cleanExercises, fichaId })
     } else {
-      addTemplate({ name: name.trim(), description: description.trim() || undefined, exercises: cleanExercises })
+      addTemplate({ name: name.trim(), description: description.trim() || undefined, exercises: cleanExercises, fichaId })
     }
 
     router.push('/treinos')
@@ -173,7 +190,35 @@ export default function TemplateForm({ existing }: Props) {
             onChange={(e) => setDescription(e.target.value)}
           />
         </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="ficha">Ficha (opcional)</Label>
+          <select
+            id="ficha"
+            value={fichaId ?? ''}
+            onChange={(e) => handleFichaSelect(e.target.value)}
+            className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <option value="">Avulso (sem ficha)</option>
+            {fichas.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
+              </option>
+            ))}
+            <option value={NEW_FICHA_VALUE}>+ Criar nova ficha</option>
+          </select>
+          <p className="text-[11px] text-muted-foreground">
+            Agrupa este treino com outros da mesma ficha (ex: Treino A/B/C) — a sugestão de
+            próximo treino passa a rotacionar só entre eles.
+          </p>
+        </div>
       </div>
+
+      {creatingFicha && (
+        <FichaDialog
+          onClose={() => setCreatingFicha(false)}
+          onCreated={(ficha) => setFichaId(ficha.id)}
+        />
+      )}
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">

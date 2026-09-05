@@ -64,6 +64,23 @@ export interface WorkoutTemplate {
   exercises: ExerciseTemplate[]
   createdAt: string
   updatedAt: string
+  /** Groups this workout under a Ficha (training program/split). At most one — see Ficha. */
+  fichaId?: string
+}
+
+/**
+ * A Ficha groups several WorkoutTemplates into one program/split (e.g. "Push
+ * Pull Legs" containing Treino A/B/C). A workout belongs to at most one
+ * ficha; the "next suggested workout" rotation cycles only within the
+ * ficha of whichever workout was done last, instead of across every saved
+ * template.
+ */
+export interface Ficha {
+  id: string
+  name: string
+  description?: string
+  createdAt: string
+  updatedAt: string
 }
 
 export interface SetLog {

@@ -16,6 +16,7 @@ import type {
   ProgressPhoto,
   Habit,
   HabitFrequency,
+  Ficha,
 } from '@/types'
 
 /** Default auto warm-up: 60% of the working weight (40% lighter), 8 reps. */
@@ -60,6 +61,7 @@ const DEFAULT_SETTINGS: AppSettings = {
 
 interface EchoStore {
   templates: WorkoutTemplate[]
+  fichas: Ficha[]
   sessions: WorkoutSession[]
   activeSession: WorkoutSession | null
   personalRecords: Record<string, PersonalRecord>
@@ -94,6 +96,12 @@ interface EchoStore {
   addTemplate: (template: Omit<WorkoutTemplate, 'id' | 'createdAt' | 'updatedAt'>) => WorkoutTemplate
   updateTemplate: (id: string, data: Partial<Omit<WorkoutTemplate, 'id' | 'createdAt'>>) => void
   deleteTemplate: (id: string) => void
+
+  // Ficha actions (a Ficha groups several workout templates into one program/split)
+  addFicha: (name: string, description?: string) => Ficha
+  updateFicha: (id: string, data: Partial<Omit<Ficha, 'id' | 'createdAt'>>) => void
+  /** Unlinks member templates (fichaId cleared) instead of deleting them. */
+  deleteFicha: (id: string) => void
 
   // Session actions
   startWorkout: (template: WorkoutTemplate | null, name?: string) => WorkoutSession
@@ -217,6 +225,7 @@ export const useEchoStore = create<EchoStore>()(
   persist(
     (set, get) => ({
       templates: [],
+      fichas: [],
       sessions: [],
       activeSession: null,
       personalRecords: {},
@@ -251,6 +260,34 @@ export const useEchoStore = create<EchoStore>()(
 
       deleteTemplate: (id) => {
         set((s) => ({ templates: s.templates.filter((t) => t.id !== id) }))
+      },
+
+      addFicha: (name, description) => {
+        const now = new Date().toISOString()
+        const ficha: Ficha = {
+          id: uuid(),
+          name: name.trim(),
+          description: description?.trim() || undefined,
+          createdAt: now,
+          updatedAt: now,
+        }
+        set((s) => ({ fichas: [...s.fichas, ficha] }))
+        return ficha
+      },
+
+      updateFicha: (id, data) => {
+        set((s) => ({
+          fichas: s.fichas.map((f) =>
+            f.id === id ? { ...f, ...data, updatedAt: new Date().toISOString() } : f
+          ),
+        }))
+      },
+
+      deleteFicha: (id) => {
+        set((s) => ({
+          fichas: s.fichas.filter((f) => f.id !== id),
+          templates: s.templates.map((t) => (t.fichaId === id ? { ...t, fichaId: undefined } : t)),
+        }))
       },
 
       startWorkout: (template, name) => {

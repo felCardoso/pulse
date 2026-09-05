@@ -1,18 +1,23 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
-import { Plus, Dumbbell, CalendarDays } from 'lucide-react'
+import { Plus, Dumbbell, CalendarDays, FolderPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import TemplateCard from '@/components/template/TemplateCard'
+import FichaSection from '@/components/template/FichaSection'
+import FichaDialog from '@/components/template/FichaDialog'
 import WeeklyScheduleCard from '@/components/template/WeeklyScheduleCard'
 import { useEchoStore } from '@/store/echo-store'
+import { getLastSessionForTemplate } from '@/utils/schedule'
 
 export default function TreinosPage() {
   const templates = useEchoStore((s) => s.templates)
+  const fichas = useEchoStore((s) => s.fichas)
   const sessions = useEchoStore((s) => s.sessions)
+  const [creatingFicha, setCreatingFicha] = useState(false)
 
-  const getLastSession = (templateId: string) =>
-    sessions.find((s) => s.templateId === templateId && s.status === 'completed')
+  const avulsos = templates.filter((t) => !t.fichaId)
 
   return (
     <div className="space-y-6">
@@ -35,10 +40,44 @@ export default function TreinosPage() {
         <WeeklyScheduleCard />
       </div>
 
-      {/* Saved templates */}
+      {/* Fichas: programs/splits grouping several workouts */}
+      <div className="space-y-2.5">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Fichas
+          </h2>
+          <button
+            type="button"
+            onClick={() => setCreatingFicha(true)}
+            className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+          >
+            <FolderPlus className="h-3.5 w-3.5" />
+            Nova ficha
+          </button>
+        </div>
+
+        {fichas.length === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            Agrupe vários treinos (ex: Treino A, B, C) em uma ficha para organizar seu programa.
+          </p>
+        ) : (
+          <div className="space-y-2.5">
+            {fichas.map((ficha) => (
+              <FichaSection
+                key={ficha.id}
+                ficha={ficha}
+                templates={templates.filter((t) => t.fichaId === ficha.id)}
+                sessions={sessions}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Saved templates without a ficha */}
       <div className="space-y-2.5">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Meus treinos
+          {fichas.length > 0 ? 'Treinos avulsos' : 'Meus treinos'}
         </h2>
 
         {templates.length === 0 ? (
@@ -57,10 +96,12 @@ export default function TreinosPage() {
               </Button>
             </Link>
           </div>
+        ) : avulsos.length === 0 ? (
+          <p className="text-xs text-muted-foreground">Todos os seus treinos estão em uma ficha.</p>
         ) : (
           <div className="space-y-2.5">
-            {templates.map((template) => {
-              const last = getLastSession(template.id)
+            {avulsos.map((template) => {
+              const last = getLastSessionForTemplate(template.id, sessions)
               return (
                 <TemplateCard
                   key={template.id}
@@ -72,6 +113,8 @@ export default function TreinosPage() {
           </div>
         )}
       </div>
+
+      {creatingFicha && <FichaDialog onClose={() => setCreatingFicha(false)} />}
     </div>
   )
 }
