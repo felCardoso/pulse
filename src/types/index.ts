@@ -197,4 +197,11 @@ export interface Habit {
   frequency: HabitFrequency
   /** Dates (YYYY-MM-DD) checked off. */
   completions: string[]
+  /**
+   * Eternal routine: has no 30-day goal/end — it's an ongoing habit tracked
+   * by a monthly progress bar (resets every calendar month) instead.
+   */
+  eternal?: boolean
+  /** Whether this habit shows in the Início "Rotinas de hoje" widget. Defaults to true. */
+  showOnHome?: boolean
 }

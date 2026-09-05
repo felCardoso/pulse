@@ -13,10 +13,11 @@ export default function TodayHabitsRow() {
   const toggleHabitToday = useEchoStore((s) => s.toggleHabitToday)
   const getHabitProgress = useEchoStore((s) => s.getHabitProgress)
 
-  if (habits.length === 0) return null
+  const visibleHabits = habits.filter((h) => h.showOnHome !== false)
+  if (visibleHabits.length === 0) return null
 
   const today = getLocalDateStr()
-  const shown = habits.slice(0, 3)
+  const shown = visibleHabits.slice(0, 3)
 
   return (
     <div className="space-y-2.5">
@@ -24,7 +25,7 @@ export default function TodayHabitsRow() {
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Rotinas de hoje
         </h2>
-        {habits.length > 3 && (
+        {visibleHabits.length > 3 && (
           <Link
             href="/rotinas"
             className="flex items-center gap-0.5 text-xs font-medium text-primary hover:underline"

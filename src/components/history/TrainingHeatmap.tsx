@@ -53,7 +53,7 @@ export default function TrainingHeatmap({ sessions }: { sessions: WorkoutSession
   }, [sessions])
 
   const levelClass = (count: number) => {
-    if (count <= 0) return 'bg-secondary'
+    if (count <= 0) return 'bg-foreground/10'
     if (count === 1) return 'bg-primary/50'
     return 'bg-primary'
   }

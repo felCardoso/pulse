@@ -138,8 +138,14 @@ interface EchoStore {
 
   // Habit actions
   addHabit: (name: string, frequency?: HabitFrequency) => Habit
+  updateHabit: (
+    id: string,
+    data: Partial<Pick<Habit, 'name' | 'frequency' | 'eternal' | 'showOnHome'>>
+  ) => void
   deleteHabit: (id: string) => void
   toggleHabitToday: (id: string) => void
+  /** Toggles a specific date (retroactive check-in) — used by the habit's mini-calendar. */
+  toggleHabitDate: (id: string, dateStr: string) => void
   getHabitProgress: (id: string) => {
     count: number
     target: number
@@ -153,6 +159,12 @@ interface EchoStore {
    * recent month first, when walking back from today.
    */
   getHabitStreak: (id: string) => number
+  /** Monthly progress for an "eternal" habit — resets every calendar month. */
+  getHabitMonthProgress: (id: string) => {
+    count: number
+    target: number
+    percentage: number
+  }
 
   // Rest timer actions
   startRest: (seconds: number, isRestPause?: boolean) => void
@@ -655,23 +667,33 @@ export const useEchoStore = create<EchoStore>()(
         return habit
       },
 
+      updateHabit: (id, data) => {
+        set((s) => ({
+          habits: s.habits.map((h) => (h.id === id ? { ...h, ...data } : h)),
+        }))
+      },
+
       deleteHabit: (id) => {
         set((s) => ({ habits: s.habits.filter((h) => h.id !== id) }))
       },
 
       toggleHabitToday: (id) => {
-        const today = todayStr()
+        get().toggleHabitDate(id, todayStr())
+      },
+
+      toggleHabitDate: (id, dateStr) => {
         const habit = get().habits.find((h) => h.id === id)
-        if (!habit || !countsForHabit(today, habit.frequency)) return
+        if (!habit || !countsForHabit(dateStr, habit.frequency)) return
+        if (dateStr > todayStr()) return
         set((s) => ({
           habits: s.habits.map((h) => {
             if (h.id !== id) return h
-            const checked = h.completions.includes(today)
+            const checked = h.completions.includes(dateStr)
             return {
               ...h,
               completions: checked
-                ? h.completions.filter((d) => d !== today)
-                : [...h.completions, today],
+                ? h.completions.filter((d) => d !== dateStr)
+                : [...h.completions, dateStr],
             }
           }),
         }))
@@ -729,6 +751,32 @@ export const useEchoStore = create<EchoStore>()(
           cursor.setDate(cursor.getDate() - 1)
         }
         return streak
+      },
+
+      getHabitMonthProgress: (id) => {
+        const habit = get().habits.find((h) => h.id === id)
+        if (!habit) return { count: 0, target: 0, percentage: 0 }
+
+        const now = new Date()
+        const year = now.getFullYear()
+        const month = now.getMonth()
+        const daysInMonth = new Date(year, month + 1, 0).getDate()
+
+        let target = 0
+        let count = 0
+        for (let day = 1; day <= daysInMonth; day++) {
+          const d = new Date(year, month, day)
+          const dateStr = getLocalDateStr(d)
+          if (!countsForHabit(dateStr, habit.frequency)) continue
+          target++
+          if (habit.completions.includes(dateStr)) count++
+        }
+
+        return {
+          count,
+          target,
+          percentage: target > 0 ? Math.min(100, (count / target) * 100) : 0,
+        }
       },
 
       startRest: (seconds, isRestPause) => {
