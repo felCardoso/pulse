@@ -4,4 +4,5 @@
     <string name="title_activity_main">Echo</string>
     <string name="package_name">com.echo.app</string>
     <string name="custom_url_scheme">com.echo.app</string>
+    <string name="widget_description">Próximo treino e sequência do Echo</string>
 </resources>

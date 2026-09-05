@@ -16,6 +16,7 @@ import { calcTotalVolume, computeStreak, formatDuration, getLocalDateStr } from 
 import { getTodaySuggestion } from '@/utils/schedule'
 import { findStagnantExercises } from '@/utils/stagnation'
 import { requestNotificationPermission, notifyWorkoutReminder } from '@/lib/notifications'
+import { updateHomeWidget } from '@/lib/homeWidget'
 
 export default function InicioPage() {
   const router = useRouter()
@@ -68,6 +69,15 @@ export default function InicioPage() {
   useEffect(() => {
     requestNotificationPermission()
   }, [])
+
+  // Keep the Android home-screen widget in sync with what this screen is
+  // showing — same suggestion, same streak.
+  useEffect(() => {
+    updateHomeWidget(
+      activeSession ? activeSession.name : suggestedTemplate?.name ?? 'Nenhum treino sugerido',
+      streak
+    )
+  }, [activeSession, suggestedTemplate?.name, streak])
 
   useEffect(() => {
     if (!workoutReminders || activeSession || !suggestedTemplate) return
