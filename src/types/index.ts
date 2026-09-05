@@ -148,6 +148,8 @@ export interface PersonalRecord {
 
 export interface AppSettings {
   primaryHue: number
+  /** 'system' follows the OS light/dark preference. Defaults to 'dark' — the app was designed dark-first. */
+  themeMode: 'light' | 'dark' | 'system'
   weightUnit: 'kg' | 'lbs'
   defaultRestSeconds: number
   hapticEnabled: boolean

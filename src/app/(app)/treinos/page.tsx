@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
-import { Plus, Dumbbell, CalendarDays, FolderPlus } from 'lucide-react'
+import { v4 as uuid } from 'uuid'
+import { Plus, Dumbbell, CalendarDays, FolderPlus, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import TemplateCard from '@/components/template/TemplateCard'
 import FichaSection from '@/components/template/FichaSection'
@@ -10,14 +11,44 @@ import FichaDialog from '@/components/template/FichaDialog'
 import WeeklyScheduleCard from '@/components/template/WeeklyScheduleCard'
 import { useEchoStore } from '@/store/echo-store'
 import { getLastSessionForTemplate } from '@/utils/schedule'
+import { parseFichaFile } from '@/lib/fichaShare'
 
 export default function TreinosPage() {
   const templates = useEchoStore((s) => s.templates)
   const fichas = useEchoStore((s) => s.fichas)
   const sessions = useEchoStore((s) => s.sessions)
+  const addFicha = useEchoStore((s) => s.addFicha)
+  const addTemplate = useEchoStore((s) => s.addTemplate)
   const [creatingFicha, setCreatingFicha] = useState(false)
+  const [importError, setImportError] = useState<string | null>(null)
+  const importRef = useRef<HTMLInputElement>(null)
 
   const avulsos = templates.filter((t) => !t.fichaId)
+
+  const handleImportFicha = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImportError(null)
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      try {
+        const data = parseFichaFile(ev.target?.result as string)
+        const ficha = addFicha(data.name, data.description)
+        for (const t of data.templates) {
+          addTemplate({
+            name: t.name,
+            description: t.description,
+            exercises: t.exercises.map((ex) => ({ ...ex, id: uuid() })),
+            fichaId: ficha.id,
+          })
+        }
+      } catch {
+        setImportError('Arquivo inválido. Verifique se é uma ficha exportada do Echo.')
+      }
+    }
+    reader.readAsText(file)
+    e.target.value = ''
+  }
 
   return (
     <div className="space-y-6">
@@ -46,15 +77,34 @@ export default function TreinosPage() {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Fichas
           </h2>
-          <button
-            type="button"
-            onClick={() => setCreatingFicha(true)}
-            className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-          >
-            <FolderPlus className="h-3.5 w-3.5" />
-            Nova ficha
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => importRef.current?.click()}
+              className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+            >
+              <Upload className="h-3.5 w-3.5" />
+              Importar
+            </button>
+            <input
+              ref={importRef}
+              type="file"
+              accept="application/json"
+              className="hidden"
+              onChange={handleImportFicha}
+            />
+            <button
+              type="button"
+              onClick={() => setCreatingFicha(true)}
+              className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+            >
+              <FolderPlus className="h-3.5 w-3.5" />
+              Nova ficha
+            </button>
+          </div>
         </div>
+
+        {importError && <p className="text-xs text-destructive">{importError}</p>}
 
         {fichas.length === 0 ? (
           <p className="text-xs text-muted-foreground">

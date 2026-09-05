@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, Trash2, PartyPopper } from 'lucide-react'
+import { Check, Trash2, PartyPopper, Flame } from 'lucide-react'
 import { useEchoStore, isWeekday } from '@/store/echo-store'
 import ContextMenu from '@/components/ui/context-menu'
 import ConfirmDialog from '@/components/ui/confirm-dialog'
@@ -16,9 +16,11 @@ export default function HabitCard({ habit }: Props) {
   const toggleHabitToday = useEchoStore((s) => s.toggleHabitToday)
   const deleteHabit = useEchoStore((s) => s.deleteHabit)
   const getHabitProgress = useEchoStore((s) => s.getHabitProgress)
+  const getHabitStreak = useEchoStore((s) => s.getHabitStreak)
   const [confirmOpen, setConfirmOpen] = useState(false)
 
   const { count, target, percentage, isRoutine, checkedToday } = getHabitProgress(habit.id)
+  const streak = getHabitStreak(habit.id)
   const today = getLocalDateStr()
   const isDaily = habit.frequency === 'daily'
   const canCheckToday = isDaily || isWeekday(today)
@@ -38,7 +40,15 @@ export default function HabitCard({ habit }: Props) {
         <div className="rounded-xl border border-border bg-card p-4 space-y-3">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
-              <p className="truncate font-medium text-foreground">{habit.name}</p>
+              <div className="flex items-center gap-2">
+                <p className="truncate font-medium text-foreground">{habit.name}</p>
+                {streak > 0 && (
+                  <span className="flex shrink-0 items-center gap-0.5 rounded-full bg-orange-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-orange-500">
+                    <Flame className="h-3 w-3" />
+                    {streak}
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {isRoutine ? (
                   <span className="inline-flex items-center gap-1 text-primary">

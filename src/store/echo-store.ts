@@ -3,7 +3,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { v4 as uuid } from 'uuid'
-import { getLocalDateStr } from '@/utils/format'
+import { getLocalDateStr, parseLocalDateStr } from '@/utils/format'
 import type {
   WorkoutTemplate,
   ExerciseTemplate,
@@ -49,6 +49,7 @@ function todayStr(): string {
 
 const DEFAULT_SETTINGS: AppSettings = {
   primaryHue: 64,
+  themeMode: 'dark',
   weightUnit: 'kg',
   defaultRestSeconds: 90,
   hapticEnabled: true,
@@ -146,6 +147,12 @@ interface EchoStore {
     isRoutine: boolean
     checkedToday: boolean
   }
+  /**
+   * Current consecutive-day streak, with one missed required day forgiven
+   * per calendar month (a "streak freeze") — applied automatically, most
+   * recent month first, when walking back from today.
+   */
+  getHabitStreak: (id: string) => number
 
   // Rest timer actions
   startRest: (seconds: number, isRestPause?: boolean) => void
@@ -684,6 +691,46 @@ export const useEchoStore = create<EchoStore>()(
         }
       },
 
+      getHabitStreak: (id) => {
+        const habit = get().habits.find((h) => h.id === id)
+        if (!habit) return 0
+
+        const today = todayStr()
+        const checkedToday = habit.completions.includes(today)
+        const todayRequired = countsForHabit(today, habit.frequency)
+
+        // Today isn't over yet — if it's required but not yet checked, that
+        // doesn't break the streak, it just isn't counted yet. Start from
+        // yesterday instead.
+        const cursor = parseLocalDateStr(today)
+        if (todayRequired && !checkedToday) cursor.setDate(cursor.getDate() - 1)
+
+        // habit.createdAt is a UTC ISO timestamp — convert to a local
+        // YYYY-MM-DD before parsing, not a raw slice (which stays in UTC
+        // and can land on the wrong local day for negative-offset zones).
+        const createdAt = parseLocalDateStr(getLocalDateStr(new Date(habit.createdAt)))
+        const freezedMonths = new Set<string>()
+        let streak = 0
+
+        // Safety cap — no habit realistically runs longer than this.
+        for (let i = 0; i < 3650 && cursor >= createdAt; i++) {
+          const dateStr = getLocalDateStr(cursor)
+          if (countsForHabit(dateStr, habit.frequency)) {
+            if (habit.completions.includes(dateStr)) {
+              streak++
+            } else {
+              const monthKey = dateStr.slice(0, 7)
+              if (freezedMonths.has(monthKey)) break
+              // Streak freeze: one missed required day forgiven per month.
+              freezedMonths.add(monthKey)
+              streak++
+            }
+          }
+          cursor.setDate(cursor.getDate() - 1)
+        }
+        return streak
+      },
+
       startRest: (seconds, isRestPause) => {
         const effective = isRestPause ? REST_PAUSE_SECONDS : seconds
         if (effective <= 0) return
@@ -739,6 +786,19 @@ export const useEchoStore = create<EchoStore>()(
     {
       name: 'echo-store',
       skipHydration: true,
+      // Zustand's default merge replaces `settings` wholesale with whatever
+      // was persisted — so a settings object saved before a new field (e.g.
+      // themeMode) existed would permanently lack it after rehydrating,
+      // even though DEFAULT_SETTINGS has since been updated. Merge settings
+      // one level deep instead, so new default fields still apply.
+      merge: (persistedState, currentState) => {
+        const persisted = (persistedState ?? {}) as Partial<EchoStore>
+        return {
+          ...currentState,
+          ...persisted,
+          settings: { ...currentState.settings, ...persisted.settings },
+        }
+      },
     }
   )
 )

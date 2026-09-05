@@ -2,13 +2,14 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Folder, Pencil, Trash2, Plus } from 'lucide-react'
+import { Folder, Pencil, Trash2, Plus, Share2 } from 'lucide-react'
 import TemplateCard from './TemplateCard'
 import FichaDialog from './FichaDialog'
 import ContextMenu from '@/components/ui/context-menu'
 import ConfirmDialog from '@/components/ui/confirm-dialog'
 import { useEchoStore } from '@/store/echo-store'
 import { getLastSessionForTemplate } from '@/utils/schedule'
+import { exportFicha } from '@/lib/fichaShare'
 import type { Ficha, WorkoutTemplate, WorkoutSession } from '@/types'
 
 interface Props {
@@ -27,6 +28,11 @@ export default function FichaSection({ ficha, templates, sessions }: Props) {
       <ContextMenu
         items={[
           { label: 'Renomear', icon: <Pencil className="h-4 w-4" />, onSelect: () => setRenaming(true) },
+          {
+            label: 'Compartilhar ficha',
+            icon: <Share2 className="h-4 w-4" />,
+            onSelect: () => exportFicha(ficha, templates),
+          },
           {
             label: 'Excluir ficha',
             icon: <Trash2 className="h-4 w-4" />,
