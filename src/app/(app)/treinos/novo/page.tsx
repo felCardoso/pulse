@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import TemplateForm from '@/components/template/TemplateForm'
@@ -11,7 +12,11 @@ export default function NovoTreinoPage() {
         </Link>
         <h1 className="text-xl font-bold">Novo Treino</h1>
       </div>
-      <TemplateForm />
+      {/* TemplateForm reads ?fichaId= via useSearchParams — needs a Suspense
+          boundary for this statically-generated page. */}
+      <Suspense>
+        <TemplateForm />
+      </Suspense>
     </div>
   )
 }

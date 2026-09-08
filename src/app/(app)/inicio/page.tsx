@@ -8,12 +8,15 @@ import { Button } from '@/components/ui/button'
 import SessionCard from '@/components/history/SessionCard'
 import TrainingHeatmap from '@/components/history/TrainingHeatmap'
 import MiniWeekAgenda from '@/components/history/MiniWeekAgenda'
+import StagnationAlert from '@/components/history/StagnationAlert'
 import TodayHabitsRow from '@/components/habits/TodayHabitsRow'
 import WeightChart from '@/components/progress/WeightChart'
 import { useEchoStore } from '@/store/echo-store'
 import { calcTotalVolume, computeStreak, formatDuration, getLocalDateStr } from '@/utils/format'
 import { getTodaySuggestion } from '@/utils/schedule'
+import { findStagnantExercises } from '@/utils/stagnation'
 import { requestNotificationPermission, notifyWorkoutReminder } from '@/lib/notifications'
+import { updateHomeWidget } from '@/lib/homeWidget'
 
 export default function InicioPage() {
   const router = useRouter()
@@ -30,6 +33,8 @@ export default function InicioPage() {
   const completedSessions = sessions.filter((s) => s.status === 'completed')
   const streak = computeStreak(completedSessions)
   const recentSessions = completedSessions.slice(0, 3)
+
+  const stagnantExercises = findStagnantExercises(sessions)
 
   const weekSessions = getSessionsThisWeek()
   const weekVolume = weekSessions.reduce((acc, s) => acc + calcTotalVolume(s.exercises), 0)
@@ -64,6 +69,15 @@ export default function InicioPage() {
   useEffect(() => {
     requestNotificationPermission()
   }, [])
+
+  // Keep the Android home-screen widget in sync with what this screen is
+  // showing — same suggestion, same streak.
+  useEffect(() => {
+    updateHomeWidget(
+      activeSession ? activeSession.name : suggestedTemplate?.name ?? 'Nenhum treino sugerido',
+      streak
+    )
+  }, [activeSession, suggestedTemplate?.name, streak])
 
   useEffect(() => {
     if (!workoutReminders || activeSession || !suggestedTemplate) return
@@ -141,6 +155,9 @@ export default function InicioPage() {
           </Button>
         </div>
       )}
+
+      {/* Stagnation/deload nudge — same weight across the last few sessions */}
+      <StagnationAlert exercises={stagnantExercises} />
 
       {/* Week dashboard */}
       {weekSessions.length > 0 && (

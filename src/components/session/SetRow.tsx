@@ -135,7 +135,7 @@ export default function SetRow({
 
   return (
     <div className={cn('space-y-1.5', shake && 'animate-shake')}>
-      <div className="flex items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
         {label}
 
         {!bodyweight && (
@@ -180,16 +180,6 @@ export default function SetRow({
           className={cn('h-9 shrink-0 text-center', bodyweight ? 'flex-1' : 'w-14')}
         />
 
-        {set.isWarmup && onDelete && !editing && (
-          <button
-            onClick={onDelete}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-destructive active:scale-95"
-            aria-label="Excluir série de aquecimento"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        )}
-
         {editing && (
           <button
             onClick={cancelEdit}
@@ -207,6 +197,20 @@ export default function SetRow({
           <Check className="h-4 w-4" />
         </button>
       </div>
+
+      {/* Kept off the main row — with the +/- steppers, weight, reps and
+          check button already there, adding a delete button too squeezed
+          the weight input down to just a few illegible pixels on common
+          phone widths. */}
+      {set.isWarmup && onDelete && !editing && (
+        <button
+          onClick={onDelete}
+          className="flex items-center gap-1 pl-6 text-[10px] text-muted-foreground transition-colors hover:text-destructive"
+        >
+          <Trash2 className="h-3 w-3" />
+          Remover aquecimento
+        </button>
+      )}
 
       {/* RIR (Reps in Reserve) — 0 means true failure; the app uses this to
           hold back an auto progression increase instead of pushing further. */}

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import localFont from 'next/font/local'
 import { Space_Grotesk } from 'next/font/google'
 import StatusBarSetup from '@/components/layout/StatusBarSetup'
+import ThemeSetup from '@/components/layout/ThemeSetup'
 import './globals.css'
 
 const geistSans = localFont({
@@ -57,17 +58,26 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className="dark">
+    <html lang="pt-BR">
       <head>
-        {/* Apply saved primary hue before first paint to avoid flash */}
+        {/* Apply saved primary hue + light/dark theme before first paint to avoid a flash. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var s=JSON.parse(localStorage.getItem('echo-store')||'{}');var h=s.state?.settings?.primaryHue;if(h!=null)document.documentElement.style.setProperty('--primary-hue',h);}catch(e){}`,
+            __html: `try{
+  var s=JSON.parse(localStorage.getItem('echo-store')||'{}');
+  var settings=s.state&&s.state.settings;
+  var h=settings&&settings.primaryHue;
+  if(h!=null)document.documentElement.style.setProperty('--primary-hue',h);
+  var mode=(settings&&settings.themeMode)||'dark';
+  var isDark=mode==='dark'||(mode==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.classList.toggle('dark',isDark);
+}catch(e){document.documentElement.classList.add('dark');}`,
           }}
         />
       </head>
       <body className={`${geistSans.variable} ${spaceGrotesk.variable} antialiased`}>
         <StatusBarSetup />
+        <ThemeSetup />
         {children}
         <script
           dangerouslySetInnerHTML={{

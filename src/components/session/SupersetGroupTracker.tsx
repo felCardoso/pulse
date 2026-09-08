@@ -10,6 +10,7 @@ import { useHaptic } from '@/hooks/useHaptic'
 import { useSound } from '@/hooks/useSound'
 import { unlockAudio } from '@/lib/audio'
 import { getAutoProgression } from '@/utils/progression'
+import { supersetGroupLabel } from '@/utils/superset'
 import type { SessionExercise } from '@/types'
 
 interface Props {
@@ -19,9 +20,9 @@ interface Props {
   onSetDone: (restSeconds: number, isRestPause?: boolean) => void
 }
 
-/** A superset (2 exercises) or circuit (3+) — sets are logged round by
- * round, alternating exercises with no rest between them. Rest only kicks
- * in after the round's last exercise finishes its set. */
+/** A bi-set (2 exercises), tri-set (3), or circuit (4+) — sets are logged
+ * round by round, alternating exercises with no rest between them. Rest
+ * only kicks in after the round's last exercise finishes its set. */
 export default function SupersetGroupTracker({ group, isCurrentGroup, weightUnit, onSetDone }: Props) {
   const [expanded, setExpanded] = useState(isCurrentGroup)
 
@@ -43,7 +44,7 @@ export default function SupersetGroupTracker({ group, isCurrentGroup, weightUnit
   const haptic = useHaptic()
   const sound = useSound()
 
-  const label = group.length > 2 ? 'Circuito' : 'Superset'
+  const label = supersetGroupLabel(group.length)
   const title = group.map((e) => e.name).join(' + ')
 
   // Time-tracked members have no set list — count each as one unit,

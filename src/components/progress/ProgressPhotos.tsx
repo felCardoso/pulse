@@ -1,9 +1,10 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { Camera, Trash2, X } from 'lucide-react'
+import { Camera, Trash2, X, Columns2 } from 'lucide-react'
 import { useEchoStore } from '@/store/echo-store'
 import ConfirmDialog from '@/components/ui/confirm-dialog'
+import PhotoCompareDialog from './PhotoCompareDialog'
 import { compressImage, estimateBytes, formatBytes } from '@/lib/image'
 import type { ProgressPhoto } from '@/types'
 
@@ -26,6 +27,7 @@ export default function ProgressPhotos() {
   const [deleting, setDeleting] = useState<ProgressPhoto | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [comparing, setComparing] = useState(false)
 
   const totalBytes = estimateBytes(progressPhotos.map((p) => p.dataUrl))
   const nearLimit = totalBytes > SOFT_LIMIT_BYTES
@@ -61,11 +63,22 @@ export default function ProgressPhotos() {
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Fotos de progresso
         </h2>
-        {photos.length > 0 && (
-          <span className={`text-[10px] tabular-nums ${nearLimit ? 'text-orange-500 font-semibold' : 'text-muted-foreground'}`}>
-            {formatBytes(totalBytes)} usados
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {photos.length >= 2 && (
+            <button
+              onClick={() => setComparing(true)}
+              className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+            >
+              <Columns2 className="h-3.5 w-3.5" />
+              Comparar
+            </button>
+          )}
+          {photos.length > 0 && (
+            <span className={`text-[10px] tabular-nums ${nearLimit ? 'text-orange-500 font-semibold' : 'text-muted-foreground'}`}>
+              {formatBytes(totalBytes)} usados
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
@@ -151,6 +164,8 @@ export default function ProgressPhotos() {
           </div>
         </div>
       )}
+
+      {comparing && <PhotoCompareDialog photos={photos} onClose={() => setComparing(false)} />}
 
       <ConfirmDialog
         open={deleting !== null}

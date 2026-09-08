@@ -3,10 +3,11 @@
 import { useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Trophy, Dumbbell, ChevronDown, ChevronUp, Check } from 'lucide-react'
+import { ChevronLeft, Trophy, Dumbbell, ChevronDown, ChevronUp, Check, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useEchoStore } from '@/store/echo-store'
 import { formatDuration, formatDate, calcTotalVolume } from '@/utils/format'
+import { shareText } from '@/lib/share'
 
 export default function SessaoDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -20,6 +21,7 @@ export default function SessaoDetailPage() {
   const [note, setNote] = useState(session?.notes ?? '')
   const [noteSaved, setNoteSaved] = useState(true)
   const [savedAsTemplate, setSavedAsTemplate] = useState(false)
+  const [shareStatus, setShareStatus] = useState<'shared' | 'copied' | null>(null)
 
   if (!session) {
     return (
@@ -68,6 +70,28 @@ export default function SessaoDetailPage() {
     setSavedAsTemplate(true)
   }
 
+  const handleShare = async () => {
+    const lines = [
+      `💪 ${session.name}`,
+      formatDate(session.startedAt),
+      '',
+      session.duration != null ? `⏱️ ${formatDuration(session.duration)}` : null,
+      `🏋️ ${Math.round(totalVolume)}kg de volume`,
+      `✅ ${completedExercises} exercício${completedExercises !== 1 ? 's' : ''}`,
+      sessionPRs.length > 0
+        ? `🏆 ${sessionPRs.length} recorde${sessionPRs.length !== 1 ? 's' : ''} pessoal${sessionPRs.length !== 1 ? 'is' : ''}!`
+        : null,
+      '',
+      'Treinando com o Echo',
+    ].filter((line): line is string => line != null)
+
+    const result = await shareText(session.name, lines.join('\n'))
+    if (result === 'shared' || result === 'copied') {
+      setShareStatus(result)
+      setTimeout(() => setShareStatus(null), 2500)
+    }
+  }
+
   return (
     <div className="space-y-6 pb-8">
       <div className="flex items-center gap-3 pt-2">
@@ -78,7 +102,18 @@ export default function SessaoDetailPage() {
           <h1 className="text-xl font-bold text-foreground truncate">{session.name}</h1>
           <p className="text-xs text-muted-foreground">{formatDate(session.startedAt)}</p>
         </div>
+        <button
+          onClick={handleShare}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+          aria-label="Compartilhar treino"
+        >
+          <Share2 className="h-4 w-4" />
+        </button>
       </div>
+
+      {shareStatus === 'copied' && (
+        <p className="text-center text-xs text-primary">Resumo copiado para a área de transferência!</p>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
