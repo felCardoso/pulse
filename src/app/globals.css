@@ -98,6 +98,18 @@
   }
 }
 
+/* Number inputs use custom +/- steppers throughout the app — the native
+   spin buttons only eat space from an already-narrow field without adding
+   anything, so they're hidden everywhere. */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 4px;

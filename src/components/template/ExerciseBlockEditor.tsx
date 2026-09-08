@@ -291,7 +291,7 @@ export default function ExerciseBlockEditor({
                   value={exercise.warmupPercent ?? DEFAULT_WARMUP_PERCENT}
                   fallback={DEFAULT_WARMUP_PERCENT}
                   onChange={(n) => onChange({ warmupPercent: n })}
-                  className="h-8 w-20 text-center text-xs"
+                  className="h-10 w-20 text-center text-base font-medium"
                 />
                 <span className="text-[11px] text-muted-foreground">%</span>
               </div>
