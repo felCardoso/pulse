@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Folder, Pencil, Trash2, Plus, Share2 } from 'lucide-react'
+import { Folder, Pencil, Trash2, Plus, Share2, FolderInput } from 'lucide-react'
 import TemplateCard from './TemplateCard'
 import FichaDialog from './FichaDialog'
+import AddExistingTemplateDialog from './AddExistingTemplateDialog'
 import ContextMenu from '@/components/ui/context-menu'
 import ConfirmDialog from '@/components/ui/confirm-dialog'
 import { useEchoStore } from '@/store/echo-store'
@@ -22,6 +23,7 @@ export default function FichaSection({ ficha, templates, sessions }: Props) {
   const deleteFicha = useEchoStore((s) => s.deleteFicha)
   const [renaming, setRenaming] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [addingExisting, setAddingExisting] = useState(false)
 
   return (
     <div className="space-y-2.5 rounded-xl border border-border bg-card/40 p-3">
@@ -60,16 +62,30 @@ export default function FichaSection({ ficha, templates, sessions }: Props) {
           return <TemplateCard key={template.id} template={template} lastSessionDate={last?.startedAt} />
         })}
 
-        <Link
-          href={`/treinos/novo?fichaId=${ficha.id}`}
-          className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-border py-3 text-xs text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Adicionar treino a esta ficha
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href={`/treinos/novo?fichaId=${ficha.id}`}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-border py-3 text-xs text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Criar novo
+          </Link>
+          <button
+            type="button"
+            onClick={() => setAddingExisting(true)}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-border py-3 text-xs text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
+          >
+            <FolderInput className="h-3.5 w-3.5" />
+            Adicionar existente
+          </button>
+        </div>
       </div>
 
       {renaming && <FichaDialog ficha={ficha} onClose={() => setRenaming(false)} />}
+
+      {addingExisting && (
+        <AddExistingTemplateDialog ficha={ficha} onClose={() => setAddingExisting(false)} />
+      )}
 
       <ConfirmDialog
         open={confirmOpen}
