@@ -7,10 +7,12 @@ import { v4 as uuid } from 'uuid'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
 import ExerciseBlockEditor from './ExerciseBlockEditor'
 import CSVImport from './CSVImport'
 import FichaDialog from './FichaDialog'
 import { useEchoStore } from '@/store/echo-store'
+import { groupBySuperset, supersetGroupLabel } from '@/utils/superset'
 import type { ExerciseTemplate, WorkoutTemplate } from '@/types'
 
 const NEW_FICHA_VALUE = '__new__'
@@ -116,6 +118,21 @@ export default function TemplateForm({ existing }: Props) {
   const addExercise = () => {
     setExercises((prev) => [...prev, defaultExercise(prev.length)])
   }
+
+  // Quick shortcut for the common case: link two exercises with one tap
+  // instead of opening the block below and finding the checkbox.
+  const toggleLinkWithNext = (key: string) => {
+    setExercises((prev) => {
+      const idx = prev.findIndex((e) => e._key === key)
+      if (idx === -1 || idx === prev.length - 1) return prev
+      return prev.map((e, i) => (i === idx ? { ...e, supersetWithNext: !e.supersetWithNext } : e))
+    })
+  }
+
+  // Which bi-set/tri-set/circuit chain (if any) each exercise belongs to —
+  // flattening groupBySuperset's groups back to index order gives each
+  // exercise's own chain size, since it processes the list in order.
+  const groupSizeByIndex = groupBySuperset(exercises).flatMap((g) => g.map(() => g.length))
 
   const handleImport = (imported: Omit<ExerciseTemplate, 'id' | 'order'>[]) => {
     const drafts = imported.map((e, i) => ({
@@ -238,13 +255,27 @@ export default function TemplateForm({ existing }: Props) {
               onMoveUp={() => moveExercise(ex._key, 'up')}
               onMoveDown={() => moveExercise(ex._key, 'down')}
             />
-            {ex.supersetWithNext && (
-              <div className="flex items-center gap-2 py-1.5 pl-4">
-                <Repeat className="h-3 w-3 text-primary" />
-                <span className="text-[11px] font-medium text-primary">
-                  Superset — sem descanso até aqui
+            {i < exercises.length - 1 && (
+              <button
+                type="button"
+                onClick={() => toggleLinkWithNext(ex._key)}
+                className={cn(
+                  'flex w-full items-center gap-2 rounded-lg py-1.5 pl-4 text-left transition-colors',
+                  ex.supersetWithNext
+                    ? 'text-primary hover:text-primary/80'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <Repeat className="h-3 w-3 shrink-0" />
+                <span className="text-[11px] font-medium">
+                  {ex.supersetWithNext
+                    ? `${supersetGroupLabel(groupSizeByIndex[i])} — sem descanso até aqui (toque para desfazer)`
+                    : /* Either side of this gap may already be its own chain (e.g. the
+                         next exercise already links further on) — name the size the
+                         link would actually produce, not always "bi-set". */
+                      `Criar ${supersetGroupLabel(groupSizeByIndex[i] + groupSizeByIndex[i + 1]).toLowerCase()} com o próximo exercício`}
                 </span>
-              </div>
+              </button>
             )}
           </div>
         ))}

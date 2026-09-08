@@ -236,12 +236,12 @@ export default function ExerciseBlockEditor({
               <span>
                 <span className="flex items-center gap-1.5 text-xs font-medium text-foreground">
                   <Repeat className="h-3 w-3 text-primary" />
-                  Superset com o próximo
+                  Bi-set com o próximo
                 </span>
                 <span className="block text-[11px] text-muted-foreground">
                   Alterna com o próximo exercício, sem descanso entre eles — o descanso
                   configurado aqui só entra depois de completar a rodada dos dois.
-                  Encadeie mais de um para formar um circuito.
+                  Encadeie mais de um para formar um tri-set ou circuito.
                 </span>
               </span>
             </label>
