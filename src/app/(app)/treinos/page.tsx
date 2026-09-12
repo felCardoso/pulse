@@ -23,7 +23,7 @@ export default function TreinosPage() {
   const [importError, setImportError] = useState<string | null>(null)
   const importRef = useRef<HTMLInputElement>(null)
 
-  const avulsos = templates.filter((t) => !t.fichaId)
+  const avulsos = templates.filter((t) => !t.fichaId).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
 
   const handleImportFicha = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -116,7 +116,9 @@ export default function TreinosPage() {
               <FichaSection
                 key={ficha.id}
                 ficha={ficha}
-                templates={templates.filter((t) => t.fichaId === ficha.id)}
+                templates={templates
+                  .filter((t) => t.fichaId === ficha.id)
+                  .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))}
                 sessions={sessions}
               />
             ))}
