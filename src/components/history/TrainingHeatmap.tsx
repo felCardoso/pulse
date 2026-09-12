@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { cn } from '@/lib/utils'
 import { getLocalDateStr } from '@/utils/format'
 import type { WorkoutSession } from '@/types'
@@ -16,6 +16,8 @@ interface DayCell {
 
 /** GitHub-style contribution grid: one column per week, Sun-Sat top to bottom. */
 export default function TrainingHeatmap({ sessions }: { sessions: WorkoutSession[] }) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+
   const { weeks, monthMarkers } = useMemo(() => {
     const counts = new Map<string, number>()
     for (const s of sessions) {
@@ -52,6 +54,12 @@ export default function TrainingHeatmap({ sessions }: { sessions: WorkoutSession
     return { weeks, monthMarkers }
   }, [sessions])
 
+  // Scroll to the end so the current month is in view instead of jan/2025.
+  useEffect(() => {
+    const el = scrollRef.current
+    if (el) el.scrollLeft = el.scrollWidth
+  }, [weeks])
+
   const levelClass = (count: number) => {
     if (count <= 0) return 'bg-foreground/10'
     if (count === 1) return 'bg-primary/50'
@@ -61,7 +69,7 @@ export default function TrainingHeatmap({ sessions }: { sessions: WorkoutSession
   return (
     <div className="space-y-2 rounded-xl border border-border bg-card p-4">
       <p className="text-sm text-muted-foreground">Frequência de treinos</p>
-      <div className="overflow-x-auto no-scrollbar">
+      <div ref={scrollRef} className="overflow-x-auto no-scrollbar">
         <div className="inline-block min-w-full">
           {/* Month labels */}
           <div className="relative mb-1 h-3" style={{ width: WEEKS * 13 }}>
